@@ -1,0 +1,25 @@
+# Runtime data, never the repository's business: these hold real people.
+backend/app.db
+backend/app.db-*
+backend/uploads/
+backup.db
+*.db
+
+# Toolchains and build output
+.venv/
+node_modules/
+.next/
+out/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# Local tool state
+.claude/settings.local.json
+.claude/.headroom_wrap_*
+
+# Local configuration and secrets
+.env
+.env.local

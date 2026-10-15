@@ -1,0 +1,276 @@
+@import "tailwindcss";
+
+/* Cyan and black. The cyan pair is lifted from the brand site's own gradient,
+   rgb(60,207,215) -> rgb(40,180,190), so it matches rather than approximates. */
+@theme {
+  --color-ink: #0d1315;
+  --color-ink-soft: #5a686c;
+  --color-paper: #ffffff;
+  --color-wash: #eef4f5;
+  --color-line: #e0e8ea;
+  --color-shell: #06100f;
+
+  --color-cyan: #3ccfd7;
+  --color-cyan-deep: #28b4be;
+  /* Bright cyan on white is about 1.9:1, far too low for text. This darker
+     step is for anything that has to be read. */
+  --color-cyan-ink: #0b6670;
+
+  --font-display: var(--font-poppins), system-ui, sans-serif;
+  --font-sans: var(--font-nunito), system-ui, sans-serif;
+
+  --radius-card: 1rem;
+  --shadow-soft: 0 1px 2px rgb(13 19 21 / 0.04), 0 8px 24px -12px rgb(13 19 21 / 0.18);
+  --shadow-lift: 0 2px 6px rgb(13 19 21 / 0.06), 0 24px 48px -24px rgb(13 19 21 / 0.35);
+}
+
+html {
+  background: var(--color-wash);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* --- Type sets ---------------------------------------------------------
+   A company picks one; it swaps the two families the whole card reads from.
+   Cairo carries Arabic properly, which the Latin faces do not. */
+.type-poppins {
+  --font-display: var(--font-poppins), system-ui, sans-serif;
+  --font-sans: var(--font-nunito), system-ui, sans-serif;
+}
+.type-inter {
+  --font-display: var(--font-inter), system-ui, sans-serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+}
+.type-playfair {
+  --font-display: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-lato), system-ui, sans-serif;
+}
+.type-plex {
+  --font-display: var(--font-plex), system-ui, sans-serif;
+  --font-sans: var(--font-plex), system-ui, sans-serif;
+}
+.type-cairo {
+  --font-display: var(--font-cairo), system-ui, sans-serif;
+  --font-sans: var(--font-cairo), system-ui, sans-serif;
+}
+
+.grad-cyan {
+  background-image: linear-gradient(135deg, var(--color-cyan), var(--color-cyan-deep));
+  color: var(--color-ink);
+}
+
+.grad-shell {
+  background-image: linear-gradient(185deg, #000000 0%, #081214 55%, #0a1518 100%);
+}
+
+/* A hairline that carries the gradient rather than a flat accent colour. */
+.grad-rule {
+  background-image: linear-gradient(90deg, var(--color-cyan), var(--color-cyan-deep));
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-cyan-deep);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* The only motion: feedback that answers a tap. */
+@keyframes confirm {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.confirm {
+  animation: confirm 220ms ease-out;
+}
+
+@layer components {
+  /* --- Shared surfaces and controls --------------------------------------
+     Written once here so every admin page shares one set of edges, radii and
+     shadows instead of each screen inventing its own. */
+  .surface {
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background: var(--color-paper);
+    padding: 0.55rem 1.1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1.2;
+    transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+  }
+  .btn:hover {
+    border-color: var(--color-ink);
+  }
+
+  .btn-primary {
+    border-color: transparent;
+    background-image: linear-gradient(135deg, var(--color-cyan), var(--color-cyan-deep));
+    color: var(--color-ink);
+    box-shadow: 0 10px 20px -12px var(--color-cyan-deep);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.04);
+    border-color: transparent;
+  }
+
+  .btn-dark {
+    border-color: transparent;
+    background: var(--color-ink);
+    color: #fff;
+  }
+  .btn-dark:hover {
+    border-color: transparent;
+    background: #000;
+  }
+
+  .btn:disabled {
+    opacity: 0.55;
+  }
+
+  .field {
+    width: 100%;
+    border: 1px solid var(--color-line);
+    border-radius: 0.65rem;
+    background: var(--color-paper);
+    padding: 0.6rem 0.8rem;
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-cyan-deep);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-cyan) 28%, transparent);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    background: var(--color-wash);
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-ink-soft);
+  }
+}
+
+/* --- Background templates for the public card -------------------------
+   These dress the page behind the card, not the card itself, so the
+   contact details stay on a readable surface whichever template is picked.
+   --accent is set inline per company and defaults to the house cyan. */
+.card-page {
+  --accent: var(--color-cyan-deep);
+  --accent-2: #071012;
+  --accent-3: var(--accent);
+}
+
+.tpl-plain {
+  /* Quiet, but not dead flat: one soft wash of the accent at the top. */
+  background-color: var(--color-wash);
+  background-image: radial-gradient(
+    900px 420px at 50% -20%,
+    color-mix(in srgb, var(--accent) 16%, transparent),
+    transparent 70%
+  );
+}
+
+.tpl-grid {
+  background-color: var(--color-wash);
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.tpl-gradient {
+  background-image: linear-gradient(160deg, var(--accent) 0%, var(--accent-2) 70%);
+}
+
+.tpl-ink {
+  /* Dark, with a vignette and a faint diagonal sheen so it reads as a
+     surface rather than a flat fill. */
+  background-color: #070d0f;
+  background-image:
+    linear-gradient(
+      115deg,
+      transparent 35%,
+      color-mix(in srgb, var(--accent) 14%, transparent) 50%,
+      transparent 65%
+    ),
+    radial-gradient(120% 90% at 50% 0%, #121c20 0%, #070d0f 60%);
+}
+
+.tpl-rays {
+  background-color: #071012;
+  background-image:
+    radial-gradient(
+      1100px 560px at 50% -12%,
+      color-mix(in srgb, var(--accent) 55%, transparent),
+      transparent 70%
+    ),
+    repeating-conic-gradient(
+      from 205deg at 50% -12%,
+      color-mix(in srgb, var(--accent-3) 22%, transparent) 0deg 4deg,
+      transparent 4deg 13deg
+    );
+}
+
+/* Flat fill in the company's own first colour. */
+.tpl-solid {
+  background-color: var(--accent);
+}
+
+/* A picture behind the card. --wallpaper is set inline on the page. */
+.tpl-wallpaper {
+  background-color: var(--accent);
+  background-image: var(--wallpaper);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: scroll;
+}
+.fit-stretch {
+  background-size: 100% 100%;
+}
+.fit-tile {
+  background-repeat: repeat;
+  background-size: auto;
+}
+
+/* The accent-coloured rule under a name on the card. */
+.accent-rule {
+  background-image: linear-gradient(90deg, var(--accent), var(--accent-3));
+}
+
+/* The band behind the name block on the card. */
+.accent-band {
+  background-image: linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent-3) 70%, #04181c));
+}
