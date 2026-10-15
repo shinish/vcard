@@ -44,6 +44,30 @@ instead, under Settings.
 Two of them are easy to forget on a real domain: `COOKIE_SECURE=1`, or the
 admin session cookie travels in the clear, and `CORS_ORIGINS`.
 
+## Deploying
+
+One small host runs all three containers. The images are built by CI and
+pulled, so the host never compiles — which is the point of a burstable box.
+
+```sh
+az group create --name cards-rg --location centralindia
+az deployment group create --resource-group cards-rg --template-file deploy/azure-vm.json \
+  --parameters adminPublicKey="$(cat ~/.ssh/id_ed25519.pub)" sshFrom="$(curl -s https://api.ipify.org)" \
+               size=Standard_B2ts_v2 cloudInit="$(base64 -i deploy/cloud-init.yml | tr -d '\n')"
+ssh azureuser@<ip> 'cd /opt/cards && sudo docker compose up -d'
+ssh azureuser@<ip> 'cd /opt/cards && sudo docker compose exec -T api \
+  uv run --no-sync python -m app.bootstrap --email you@example.com'
+```
+
+Then point an A record at the address; Caddy gets the certificate itself.
+Updating is `docker compose pull && docker compose up -d` — the database and
+the uploads are on a named volume and outlive the images.
+
+Two things the deployment taught, both now in the code: Next resolves its
+rewrites when it *builds*, so the API is routed by Caddy rather than through
+the front end, and `app.bootstrap` is the only way into a fresh install, so it
+has a test over it.
+
 ## Decisions worth knowing before changing things
 
 - **A company row is a branch.** Branches share a name and differ by branch, so

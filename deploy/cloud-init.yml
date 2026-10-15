@@ -1,0 +1,55 @@
+#cloud-config
+package_update: true
+packages:
+  - docker.io
+  - docker-compose-v2
+write_files:
+  - path: /opt/cards/compose.yml
+    permissions: "0644"
+    content: |
+      services:
+        api:
+          image: ghcr.io/shinish/vcard-api:latest
+          restart: unless-stopped
+          environment:
+            COOKIE_SECURE: "1"
+            CORS_ORIGINS: "https://cards.truestaroman.com"
+          volumes:
+            - cards-data:/data
+          expose: ["8000"]
+        web:
+          image: ghcr.io/shinish/vcard-web:latest
+          restart: unless-stopped
+          environment:
+            API_ORIGIN: "http://api:8000"
+          depends_on: [api]
+          expose: ["3000"]
+        edge:
+          image: caddy:2-alpine
+          restart: unless-stopped
+          ports: ["80:80", "443:443"]
+          volumes:
+            - ./Caddyfile:/etc/caddy/Caddyfile:ro
+            - caddy-data:/data
+            - caddy-config:/config
+          depends_on: [web]
+      volumes:
+        cards-data:
+        caddy-data:
+        caddy-config:
+  - path: /opt/cards/Caddyfile
+    permissions: "0644"
+    content: |
+      cards.truestaroman.com {
+      	encode zstd gzip
+      	reverse_proxy web:3000
+      	header {
+      		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+      		X-Content-Type-Options nosniff
+      		Referrer-Policy strict-origin-when-cross-origin
+      		-Server
+      	}
+      }
+runcmd:
+  - systemctl enable --now docker
+  - usermod -aG docker azureuser
