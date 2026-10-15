@@ -78,6 +78,17 @@ def record(
         )
 
 
+def photo_for(row) -> tuple[str | None, str | None]:
+    """The card's photo: the holder's own, else the company's stand-in.
+
+    Returned as a pair because the two copies travel together — the big one to
+    the page, the small one into the .vcf.
+    """
+    if row["photo_path"]:
+        return row["photo_path"], row["photo_small_path"]
+    return row["company_photo"], row["company_photo_small"]
+
+
 def source_of(request: Request, hint: str | None) -> str | None:
     """Where the opener came from: the ?s= hint, else the referring host."""
     if hint:
@@ -106,6 +117,7 @@ def fetch(public_id: str):
             "co.wallpaper_fit AS company_wallpaper_fit, co.font AS company_font, "
             "co.show_qr AS company_show_qr, co.show_qr_download AS company_show_qr_download, "
             "co.favicon_path AS company_favicon, co.require_consent AS company_consent, "
+            "co.photo_path AS company_photo, co.photo_small_path AS company_photo_small, "
             "co.public_sharing AS company_public, co.allow_indexing AS company_indexing, "
             "co.allow_save AS company_allow_save, co.share_message AS company_share_message, "
             "co.show_company_name AS company_show_name, co.show_branch AS company_show_branch, "
@@ -130,8 +142,9 @@ def download_vcf(public_id: str, request: Request):
         raise HTTPException(403, "This card cannot be saved to a phone")
     record(row["id"], "save", request=request)
     photo = None
-    if row["photo_small_path"]:
-        path = UPLOADS / row["photo_small_path"]
+    _, small = photo_for(row)
+    if small:
+        path = UPLOADS / small
         photo = path.read_bytes() if path.exists() else None
 
     stem = "-".join(p for p in (row["first_name"], row["last_name"]) if p) or "contact"
@@ -188,9 +201,10 @@ def card_qr_png(public_id: str, request: Request):
 @router.get("/{public_id}/photo.jpg")
 def card_photo(public_id: str):
     row, _ = fetch(public_id)
-    if not row["photo_path"]:
+    display, _ = photo_for(row)
+    if not display:
         raise HTTPException(404, "No photo")
-    path = UPLOADS / row["photo_path"]
+    path = UPLOADS / display
     if not path.exists():
         raise HTTPException(404, "No photo")
     return FileResponse(path, media_type="image/jpeg")
@@ -243,7 +257,7 @@ def email_signature(public_id: str, template: str = signature.DEFAULT_TEMPLATE):
         "name": row["company_name"],
         "accents": _palette(row["company_accents"]),
         "logo_url": row["company_logo"],
-        "photo": bool(row["photo_path"]),
+        "photo": bool(photo_for(row)[0]),
         # The banner design shows the company's first showcase picture.
         "picture_url": (
             f"{public_base_url()}/api/public/{public_id}/media/{picture['id']}.jpg"
@@ -360,7 +374,10 @@ def get_card(public_id: str, request: Request, s: str | None = None):
         "share_message": row["company_share_message"] or None,
         "media": showcase(row["company_id"], public_id),
     }
-    out["photo_url"] = f"/api/public/{public_id}/photo.jpg" if row["photo_path"] else None
+    display, _ = photo_for(row)
+    out["photo_url"] = f"/api/public/{public_id}/photo.jpg" if display else None
+    # Whose face it is, so the card can say "the company's" if it wants to.
+    out["photo_is_company"] = bool(display) and not row["photo_path"]
     out["vcf_url"] = f"/api/public/{public_id}.vcf"
     out["qr_url"] = f"/api/public/{public_id}/qr.svg"
     return out

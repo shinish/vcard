@@ -25,6 +25,10 @@ CREATE TABLE IF NOT EXISTS companies (
   wallpaper_fit  TEXT NOT NULL DEFAULT 'cover',
   font       TEXT NOT NULL DEFAULT 'poppins',
   favicon_path   TEXT,
+  -- A photo for cards whose holder has none: the same two copies a contact
+  -- gets, because it lands in the same two places (the page and the .vcf).
+  photo_path       TEXT,
+  photo_small_path TEXT,
   require_consent INTEGER NOT NULL DEFAULT 0,
   -- Switches for one company's cards. Off means the public page refuses.
   public_sharing INTEGER NOT NULL DEFAULT 1,

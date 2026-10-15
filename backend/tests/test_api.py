@@ -1225,3 +1225,44 @@ def test_a_card_made_without_an_org_still_names_its_company(seeded):
         data={"first_name": "Deliberate", "company_id": company, "org": ""},
     ).json()["public_id"]
     assert TestClient(app).get(f"/api/public/{blank}").json()["org"] in (None, "")
+
+
+def test_a_company_photo_stands_in_for_a_card_without_one(seeded):
+    """A card with no photo wears the company's; their own always wins."""
+    root = sign_in("root", "super-secret-pw")
+    company = root.post(
+        "/api/admin/companies",
+        data={"name": "Faces Ltd"},
+        files={"photo": ("default.jpg", jpeg_bytes(), "image/jpeg")},
+    ).json()["id"]
+
+    saved = root.get(f"/api/admin/companies/{company}").json()
+    assert saved["photo_path"] and saved["photo_small_path"]
+    assert root.get(f"/api/admin/companies/{company}/photo.jpg").status_code == 200
+
+    anon = TestClient(app)
+    bare = root.post(
+        "/api/admin/contacts", data={"first_name": "Faceless", "company_id": company}
+    ).json()["public_id"]
+    card = anon.get(f"/api/public/{bare}").json()
+    assert card["photo_url"] == f"/api/public/{bare}/photo.jpg"
+    assert card["photo_is_company"] is True
+    assert anon.get(f"/api/public/{bare}/photo.jpg").status_code == 200
+    # ...and it rides into the contact file, which is the point of having one
+    assert "PHOTO;ENCODING=b" in unfold(anon.get(f"/api/public/{bare}.vcf").text)
+
+    theirs = root.post(
+        "/api/admin/contacts",
+        data={"first_name": "Pictured", "company_id": company},
+        files={"photo": ("mine.jpg", jpeg_bytes(), "image/jpeg")},
+    ).json()["public_id"]
+    own = anon.get(f"/api/public/{theirs}").json()
+    assert own["photo_is_company"] is False
+
+    # Removing it puts the cards back to no photo at all.
+    root.patch(
+        f"/api/admin/companies/{company}",
+        data={"name": "Faces Ltd", "branch": "", "remove_photo": "1"},
+    )
+    assert anon.get(f"/api/public/{bare}").json()["photo_url"] is None
+    assert anon.get(f"/api/public/{bare}/photo.jpg").status_code == 404

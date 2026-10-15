@@ -22,6 +22,16 @@ const FIELDS = {
     maxEdge: 512,
     recommended: "512 × 512 px recommended · PNG, JPG or WebP",
   },
+  photo: {
+    title: "Edit default photo",
+    blurb:
+      "The face a card wears when its holder has none of their own. Square and round-cropped, the way a phone shows a contact.",
+    file: "photo.jpg",
+    shape: "round" as const,
+    aspect: 1,
+    maxEdge: 1400,
+    recommended: "600 × 600 px and up · JPG, PNG or WebP",
+  },
   favicon: {
     title: "Edit browser icon",
     blurb:
@@ -71,7 +81,12 @@ function Editor({ id }: { id: string }) {
    *  the original file. */
   const loadSaved = useCallback(async () => {
     if (!company) return;
-    const stored = field === "logo" ? company.logo_path : company.favicon_path;
+    const stored =
+      field === "logo"
+        ? company.logo_path
+        : field === "photo"
+          ? company.photo_path
+          : company.favicon_path;
     if (!stored) {
       setFile(null);
       return;

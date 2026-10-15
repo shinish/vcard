@@ -224,11 +224,24 @@ async def store_favicon(upload: UploadFile, company_id: int) -> str:
     return name
 
 
+async def store_company_photo(upload: UploadFile, company_id: int) -> str:
+    """The stand-in photo, written in both sizes like a contact's own."""
+    try:
+        display = f"photo-{company_id}.jpg"
+        photos.save_pair(
+            await upload.read(), UPLOADS / display, UPLOADS / f"photo-{company_id}-s.jpg"
+        )
+    except photos.BadImage as e:
+        raise HTTPException(422, str(e)) from e
+    return display
+
+
 async def apply_pictures(form, company_id: int) -> None:
-    """Save or clear the logo, favicon and wallpaper for one company."""
+    """Save or clear the pictures that belong to one company."""
     for field, store, column, filename in (
         ("logo", store_logo, "logo_path", f"logo-{company_id}.png"),
         ("favicon", store_favicon, "favicon_path", f"icon-{company_id}.png"),
+        ("photo", store_company_photo, "photo_path", f"photo-{company_id}.jpg"),
         ("wallpaper", store_wallpaper, "wallpaper_path", f"wall-{company_id}.jpg"),
     ):
         upload = form.get(field)
@@ -239,12 +252,22 @@ async def apply_pictures(form, company_id: int) -> None:
                     f"UPDATE companies SET {column} = ? WHERE id = ?",  # noqa: S608
                     (saved, company_id),
                 )
+                if field == "photo":
+                    conn.execute(
+                        "UPDATE companies SET photo_small_path = ? WHERE id = ?",
+                        (f"photo-{company_id}-s.jpg", company_id),
+                    )
         elif str(form.get(f"remove_{field}") or "") == "1":
             with connect() as conn:
                 conn.execute(
                     f"UPDATE companies SET {column} = NULL WHERE id = ?",  # noqa: S608
                     (company_id,),
                 )
+                if field == "photo":
+                    conn.execute(
+                        "UPDATE companies SET photo_small_path = NULL WHERE id = ?", (company_id,)
+                    )
+                    (UPLOADS / f"photo-{company_id}-s.jpg").unlink(missing_ok=True)
             (UPLOADS / filename).unlink(missing_ok=True)
 
 
@@ -664,6 +687,21 @@ def company_favicon(company_id: int, user: CurrentUser):
     if not path.exists():
         raise HTTPException(404, "No favicon")
     return FileResponse(path, media_type="image/png")
+
+
+@router.get("/companies/{company_id}/photo.jpg")
+def company_photo(company_id: int, user: CurrentUser):
+    """Preview the stand-in photo in the admin."""
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT photo_path FROM companies WHERE id = ?", (company_id,)
+        ).fetchone()
+    if row is None or not row["photo_path"]:
+        raise HTTPException(404, "No photo")
+    path = UPLOADS / row["photo_path"]
+    if not path.exists():
+        raise HTTPException(404, "No photo")
+    return FileResponse(path, media_type="image/jpeg")
 
 
 @router.get("/companies/{company_id}/wallpaper.jpg")

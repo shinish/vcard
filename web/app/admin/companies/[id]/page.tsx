@@ -407,6 +407,27 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
 
                   <div className="pt-3">
                     <ImagePicker
+                      name="photo"
+                      shape="round"
+                      aspect={1}
+                      maxEdge={1400}
+                      label="Default photo"
+                      existing={
+                        company?.photo_path
+                          ? `${API}/api/admin/companies/${id}/photo.jpg?v=${company.photo_path}`
+                          : null
+                      }
+                      removeName="remove_photo"
+                      hint="Worn by anyone here who has no photo of their own — a building, a mark, or a team shot. Their own photo always wins."
+                    />
+                    <Link href={`/admin/companies/${id}/image?field=photo`} className="btn mt-2">
+                      <Icon name="grid" className="size-4" />
+                      Edit photo on its own page
+                    </Link>
+                  </div>
+
+                  <div className="pt-3">
+                    <ImagePicker
                       name="favicon"
                       shape="rect"
                       aspect={1}

@@ -140,6 +140,8 @@ def init() -> None:
                 "show_qr": "INTEGER NOT NULL DEFAULT 1",
                 "show_qr_download": "INTEGER NOT NULL DEFAULT 1",
                 "favicon_path": "TEXT",
+                "photo_path": "TEXT",
+                "photo_small_path": "TEXT",
                 "require_consent": "INTEGER NOT NULL DEFAULT 0",
                 "public_sharing": "INTEGER NOT NULL DEFAULT 1",
                 "allow_indexing": "INTEGER NOT NULL DEFAULT 0",
