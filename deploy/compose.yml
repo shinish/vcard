@@ -1,0 +1,38 @@
+# One small host runs all three: the API, the front end, and Caddy in front for
+# TLS. Images are built by CI and pulled here, so the host spends its CPU
+# serving rather than compiling — which is the whole point of a 1-vCPU box.
+services:
+  api:
+    image: ghcr.io/shinish/vcard-api:latest
+    restart: unless-stopped
+    environment:
+      COOKIE_SECURE: "1"
+      CORS_ORIGINS: "https://cards.truestaroman.com"
+    volumes:
+      # The database and the uploads outlive every deploy.
+      - cards-data:/data
+    expose: ["8000"]
+
+  web:
+    image: ghcr.io/shinish/vcard-web:latest
+    restart: unless-stopped
+    environment:
+      # Same-origin from the browser's point of view; this hop is internal.
+      API_ORIGIN: "http://api:8000"
+    depends_on: [api]
+    expose: ["3000"]
+
+  edge:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [web]
+
+volumes:
+  cards-data:
+  caddy-data:
+  caddy-config:

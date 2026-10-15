@@ -7,6 +7,9 @@ import type { NextConfig } from "next";
 const API_ORIGIN = process.env.API_ORIGIN ?? "http://localhost:8000";
 
 const config: NextConfig = {
+  // The container carries the server and nothing else: no node_modules, no
+  // source. Harmless in development, where it is simply unused.
+  output: "standalone",
   images: { unoptimized: true },
   // The dev overlay badge sits bottom-left, on top of the sidebar's Profile
   // and Sign out links, and swallows clicks on them.

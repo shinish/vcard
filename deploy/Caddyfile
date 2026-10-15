@@ -1,0 +1,16 @@
+# Caddy gets the certificate itself and renews it; nothing to remember.
+cards.truestaroman.com {
+	encode zstd gzip
+
+	# The API is reached through the front end, so only one upstream is
+	# public. Keeping it that way is what makes the session cookie
+	# first-party.
+	reverse_proxy web:3000
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}
