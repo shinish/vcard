@@ -53,17 +53,68 @@ def _change(now: int, before: int) -> float | None:
     return round((now - before) * 100 / before, 1)
 
 
+def buckets(first: date, last: date, grain: str) -> list[str]:
+    """Every label between two dates, so a quiet period still draws."""
+    out: list[str] = []
+    step = first
+    while step <= last:
+        out.append(label_of(step, grain))
+        step += timedelta(days=1)
+    # Weeks and months repeat as the days walk past; keep the first of each.
+    seen: dict[str, None] = {}
+    for item in out:
+        seen.setdefault(item, None)
+    return list(seen)
+
+
+def label_of(day: date, grain: str) -> str:
+    if grain == "month":
+        return day.strftime("%Y-%m")
+    if grain == "week":
+        monday = day - timedelta(days=day.weekday())
+        return monday.isoformat()
+    return day.isoformat()
+
+
+# How a label is cut out of the stored timestamp, per grain. Weeks are the odd
+# one out: SQLite has no "monday of this week", so the day is bucketed in
+# Python instead and the SQL groups by day.
+GRAIN_SQL = {
+    "day": "substr(e.at, 1, 10)",
+    "week": "substr(e.at, 1, 10)",
+    "month": "substr(e.at, 1, 7)",
+}
+
+
 def window(
     days: int = 30,
     *,
     company_id: int | None = None,
     contact_id: int | None = None,
     top: int = 10,
+    first: date | None = None,
+    last: date | None = None,
+    grain: str = "day",
 ) -> dict:
-    """Totals, a daily series, the actions and the sources for one window."""
+    """Totals, a series, the actions and the sources for one window.
+
+    Either a number of days back from today, or an explicit pair of dates.
+    The window before it is the same length again, immediately before.
+    """
+    if grain not in GRAIN_SQL:
+        grain = "day"
     today = date.today()
-    start = str(today - timedelta(days=days - 1))
-    earlier = str(today - timedelta(days=2 * days - 1))
+    if first and last:
+        span = (last - first).days + 1
+        begin, finish = first, last
+    else:
+        span = days
+        begin, finish = today - timedelta(days=days - 1), today
+    start = str(begin)
+    earlier = str(begin - timedelta(days=span))
+    # Timestamps are ISO, so a date string compares correctly against them; the
+    # end needs the whole of its last day, hence the day after.
+    stop = str(finish + timedelta(days=1))
 
     scope = ""
     narrow: tuple = ()
@@ -72,57 +123,53 @@ def window(
     elif company_id is not None:
         scope, narrow = " AND c.company_id = ?", (company_id,)
 
-    counts = f"{COUNTS}{JOINED} WHERE e.at >= ?{scope}"
+    counts = f"{COUNTS}{JOINED} WHERE e.at >= ? AND e.at < ?{scope}"
 
     with connect() as conn:
-        totals = dict(conn.execute(counts, (start, *narrow)).fetchone())
-        before = dict(
-            conn.execute(
-                counts.replace("WHERE e.at >= ?", "WHERE e.at >= ? AND e.at < ?"),
-                (earlier, start, *narrow),
-            ).fetchone()
-        )
-        rows = {
-            r["day"]: dict(r)
-            for r in conn.execute(
-                "SELECT substr(e.at, 1, 10) AS day, "
-                "COUNT(*) FILTER (WHERE e.kind = 'view') AS views, "
-                "COUNT(*) FILTER (WHERE e.kind != 'view') AS clicks "
-                f"{JOINED} WHERE e.at >= ?{scope} GROUP BY day",
-                (start, *narrow),
-            )
-        }
+        totals = dict(conn.execute(counts, (start, stop, *narrow)).fetchone())
+        before = dict(conn.execute(counts, (earlier, start, *narrow)).fetchone())
+        rows: dict[str, dict] = {}
+        for r in conn.execute(
+            f"SELECT {GRAIN_SQL[grain]} AS day, "
+            "COUNT(*) FILTER (WHERE e.kind = 'view') AS views, "
+            "COUNT(*) FILTER (WHERE e.kind != 'view') AS clicks "
+            f"{JOINED} WHERE e.at >= ? AND e.at < ?{scope} GROUP BY day",
+            (start, stop, *narrow),
+        ):
+            key = r["day"]
+            if grain == "week":
+                key = label_of(date.fromisoformat(r["day"]), "week")
+            bucket = rows.setdefault(key, {"views": 0, "clicks": 0})
+            bucket["views"] += r["views"]
+            bucket["clicks"] += r["clicks"]
         by_kind = (
             f"SELECT e.kind, COUNT(*) AS n {JOINED} "
-            f"WHERE e.at >= ?{{window}} AND e.kind != 'view'{scope} "
+            f"WHERE e.at >= ? AND e.at < ? AND e.kind != 'view'{scope} "
             "GROUP BY e.kind ORDER BY n DESC"
         )
         earlier_kinds = {
-            r["kind"]: r["n"]
-            for r in conn.execute(
-                by_kind.format(window=" AND e.at < ?"), (earlier, start, *narrow)
-            )
+            r["kind"]: r["n"] for r in conn.execute(by_kind, (earlier, start, *narrow))
         }
         actions = [
             {**dict(r), "change": _change(r["n"], earlier_kinds.get(r["kind"], 0))}
-            for r in conn.execute(by_kind.format(window=""), (start, *narrow))
+            for r in conn.execute(by_kind, (start, stop, *narrow))
         ]
         sources = [
             dict(r)
             for r in conn.execute(
                 "SELECT COALESCE(NULLIF(e.source, ''), 'direct link') AS source, "
-                f"COUNT(*) AS n {JOINED} WHERE e.at >= ? AND e.kind = 'view'{scope} "
+                f"COUNT(*) AS n {JOINED} WHERE e.at >= ? AND e.at < ? AND e.kind = 'view'{scope} "
                 "GROUP BY source ORDER BY n DESC LIMIT 8",
-                (start, *narrow),
+                (start, stop, *narrow),
             )
         ]
         devices = [
             dict(r)
             for r in conn.execute(
                 "SELECT COALESCE(NULLIF(e.device, ''), 'unknown') AS device, "
-                f"COUNT(*) AS n {JOINED} WHERE e.at >= ? AND e.kind = 'view'{scope} "
+                f"COUNT(*) AS n {JOINED} WHERE e.at >= ? AND e.at < ? AND e.kind = 'view'{scope} "
                 "GROUP BY device ORDER BY n DESC",
-                (start, *narrow),
+                (start, stop, *narrow),
             )
         ]
         busiest = [
@@ -134,9 +181,9 @@ def window(
                 "COUNT(*) FILTER (WHERE e.kind != 'view') AS clicks, "
                 "COUNT(*) FILTER (WHERE e.kind = 'save') AS saves "
                 f"{JOINED} JOIN companies co ON co.id = c.company_id "
-                f"WHERE e.at >= ?{scope} "
+                f"WHERE e.at >= ? AND e.at < ?{scope} "
                 "GROUP BY c.id ORDER BY views DESC, clicks DESC LIMIT ?",
-                (start, *narrow, top),
+                (start, stop, *narrow, top),
             )
         ]
         if contact_id is not None:
@@ -149,21 +196,22 @@ def window(
                 () if company_id is None else (company_id,),
             ).fetchone()["n"]
 
-    # Zero-fill: a day with no events still has to draw as a point, or the line
-    # joins across the gap and reads as traffic that never happened.
+    # Zero-fill: a quiet day still has to draw as a point, or the line joins
+    # across the gap and reads as traffic that never happened.
     series = [
         {
-            "day": (day := str(today - timedelta(days=days - 1 - step))),
-            "views": rows.get(day, {}).get("views", 0),
-            "clicks": rows.get(day, {}).get("clicks", 0),
+            "day": key,
+            "views": rows.get(key, {}).get("views", 0),
+            "clicks": rows.get(key, {}).get("clicks", 0),
         }
-        for step in range(days)
+        for key in buckets(begin, finish, grain)
     ]
 
     return {
-        "days": days,
+        "days": span,
+        "grain": grain,
         "from": start,
-        "to": str(today),
+        "to": str(finish),
         "totals": {**totals, "cards": cards},
         "change": {
             k: _change(totals[k], before[k])

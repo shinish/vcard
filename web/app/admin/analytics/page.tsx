@@ -24,7 +24,13 @@ const RANGE_LABELS: Record<number, string> = {
 
 export default function AnalyticsPage() {
   const [days, setDays] = useState(30);
+  // Empty dates mean "the last N days"; filling both switches to that range.
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [grain, setGrain] = useState<"day" | "week" | "month">("day");
   const [companyId, setCompanyId] = useState("");
+  const [contactId, setContactId] = useState("");
+  const [people, setPeople] = useState<{ id: number; first_name: string; last_name: string | null }[]>([]);
   const [data, setData] = useState<Analytics | null>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +51,29 @@ export default function AnalyticsPage() {
       .catch((e) => setError(e.message));
   }, []);
 
+  // The people list follows the company filter, so the two agree.
+  useEffect(() => {
+    setContactId("");
+    const scope = companyId ? `?company_id=${companyId}` : "";
+    apiJson<{ id: number; first_name: string; last_name: string | null }[]>(
+      `/api/admin/contacts${scope}`,
+    )
+      .then(setPeople)
+      .catch(() => setPeople([]));
+  }, [companyId]);
+
   useEffect(() => {
     setData(null);
-    const scope = companyId ? `&company_id=${companyId}` : "";
-    apiJson<Analytics>(`/api/admin/analytics?days=${days}${scope}`)
+    const scope = contactId
+      ? `&contact_id=${contactId}`
+      : companyId
+        ? `&company_id=${companyId}`
+        : "";
+    const range = from && to ? `&start=${from}&end=${to}` : "";
+    apiJson<Analytics>(`/api/admin/analytics?days=${days}&grain=${grain}${scope}${range}`)
       .then(setData)
       .catch((e) => setError(e.message));
-  }, [days, companyId]);
+  }, [days, companyId, contactId, from, to, grain]);
 
   function exportCsv() {
     if (!data) return;
@@ -86,7 +108,9 @@ export default function AnalyticsPage() {
     setError(null);
     try {
       const scope = companyId ? `&company_id=${companyId}` : "";
-      const res = await api(`/api/admin/analytics/email?days=${days}${scope}`, { method: "POST" });
+      const res = await api(`/api/admin/analytics/email?days=${data?.days ?? days}${scope}`, {
+        method: "POST",
+      });
       const body = await res.json().catch(() => null);
       if (!res.ok) throw new Error(body?.detail ?? `Could not send it (${res.status}).`);
       setMailed(`Sent to ${body.sent_to}.`);
@@ -116,8 +140,21 @@ export default function AnalyticsPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <select
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
+            value={from && to ? "custom" : String(days)}
+            onChange={(e) => {
+              if (e.target.value === "custom") {
+                // seed the pickers with the window currently shown
+                const end = new Date();
+                const begin = new Date(end);
+                begin.setDate(end.getDate() - (days - 1));
+                setFrom(begin.toISOString().slice(0, 10));
+                setTo(end.toISOString().slice(0, 10));
+                return;
+              }
+              setFrom("");
+              setTo("");
+              setDays(Number(e.target.value));
+            }}
             aria-label="Period"
             className="field w-auto text-sm"
           >
@@ -126,6 +163,40 @@ export default function AnalyticsPage() {
                 {RANGE_LABELS[d]}
               </option>
             ))}
+            <option value="custom">Between two dates…</option>
+          </select>
+
+          {from && to ? (
+            <span className="flex items-center gap-1.5 text-sm">
+              <input
+                type="date"
+                value={from}
+                max={to}
+                onChange={(e) => setFrom(e.target.value)}
+                aria-label="From"
+                className="field w-auto text-sm"
+              />
+              <span className="text-ink-soft">to</span>
+              <input
+                type="date"
+                value={to}
+                min={from}
+                onChange={(e) => setTo(e.target.value)}
+                aria-label="To"
+                className="field w-auto text-sm"
+              />
+            </span>
+          ) : null}
+
+          <select
+            value={grain}
+            onChange={(e) => setGrain(e.target.value as "day" | "week" | "month")}
+            aria-label="Group by"
+            className="field w-auto text-sm"
+          >
+            <option value="day">Daily</option>
+            <option value="week">Weekly</option>
+            <option value="month">Monthly</option>
           </select>
           <select
             value={companyId}
@@ -140,6 +211,20 @@ export default function AnalyticsPage() {
               </option>
             ))}
           </select>
+          <select
+            value={contactId}
+            onChange={(e) => setContactId(e.target.value)}
+            aria-label="Person"
+            className="field w-auto text-sm"
+          >
+            <option value="">Everyone</option>
+            {people.map((person) => (
+              <option key={person.id} value={person.id}>
+                {[person.first_name, person.last_name].filter(Boolean).join(" ")}
+              </option>
+            ))}
+          </select>
+
           <button type="button" onClick={exportCsv} disabled={!data} className="btn">
             <Icon name="download" className="size-4" />
             Export CSV
@@ -193,7 +278,7 @@ export default function AnalyticsPage() {
           <section className="surface mb-6 p-6">
             <h2 className="font-display text-lg font-bold">Views and taps</h2>
             <p className="mb-4 text-sm text-ink-soft">
-              One point per day. Hover a day to read it out.
+              One point per {data.grain === "day" ? "day" : data.grain}. Hover it to read it out.
             </p>
             <TrendChart series={data.series} />
           </section>

@@ -6,11 +6,15 @@ and writes against. What is enforced here is the session, not a tenancy.
 
 from __future__ import annotations
 
+import contextlib
+import hashlib
+import hmac
 import json
 import re
+import secrets
 import sqlite3
 import tempfile
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from html import escape
 from pathlib import Path
 from typing import Annotated
@@ -411,6 +415,105 @@ async def stop_2fa(request: Request, user: CurrentUser):
     return {"enabled": False}
 
 
+FORGOT_MINUTES = 30
+FORGOT_DIGITS = 6
+MAX_LIVE_FORGOT = 3
+
+
+@router.post("/forgot")
+async def forgot_password(request: Request):
+    """Email a one-time code to an administrator who cannot get in.
+
+    Answers the same way whoever asks, so the form cannot be used to find out
+    which identifiers have accounts. A username that is not an email address
+    has nowhere to send to — those accounts are recovered by another admin.
+    """
+    form = await request.form()
+    identifier = str(form.get("email") or "").strip().lower()
+    quiet = {"ok": True}
+    if "@" not in identifier:
+        return quiet
+
+    with connect() as conn:
+        user = conn.execute(
+            "SELECT id, email, name, disabled FROM users WHERE lower(email) = ?", (identifier,)
+        ).fetchone()
+    if user is None or user["disabled"]:
+        return quiet
+
+    now = datetime.now(UTC)
+    with connect() as conn:
+        live = conn.execute(
+            "SELECT COUNT(*) AS n FROM user_codes WHERE user_id = ? AND used = 0 "
+            "AND expires_at > ?",
+            (user["id"], now.isoformat()),
+        ).fetchone()["n"]
+        if live >= MAX_LIVE_FORGOT:
+            return quiet
+        code = f"{secrets.randbelow(10**FORGOT_DIGITS):0{FORGOT_DIGITS}d}"
+        conn.execute(
+            "INSERT INTO user_codes (user_id, code_hash, expires_at, created_at) "
+            "VALUES (?, ?, ?, ?)",
+            (
+                user["id"],
+                hashlib.sha256(code.encode()).hexdigest(),
+                (now + timedelta(minutes=FORGOT_MINUTES)).isoformat(),
+                now.isoformat(),
+            ),
+        )
+
+    with contextlib.suppress(mailer.MailError):
+        mailer.send(
+            user["email"],
+            user["name"] or "",
+            "Your code for the contact cards admin",
+            f'<p style="font:400 15px Segoe UI,Arial,sans-serif">Here is your code. It lasts '
+            f"{FORGOT_MINUTES} minutes and works once.</p>"
+            f'<p style="font:700 26px Segoe UI,Arial,sans-serif;letter-spacing:6px">{code}</p>'
+            '<p style="font:400 13px Segoe UI,Arial,sans-serif;color:#5a686c">If this was not '
+            "you, nothing has changed: the code alone cannot sign anyone in.</p>",
+            f"Your code is {code}. It lasts {FORGOT_MINUTES} minutes and works once.",
+        )
+    return quiet
+
+
+@router.post("/reset")
+async def reset_with_code(request: Request):
+    """Set a new password with a code from the email above."""
+    form = await request.form()
+    identifier = str(form.get("email") or "").strip().lower()
+    code = re.sub(r"\D", "", str(form.get("code") or ""))
+    new_password = str(form.get("new_password") or "")
+    if len(new_password) < 10:
+        raise HTTPException(422, "The new password must be at least 10 characters")
+
+    wrong = HTTPException(422, "That code is wrong or has expired")
+    with connect() as conn:
+        user = conn.execute(
+            "SELECT id FROM users WHERE lower(email) = ? AND disabled = 0", (identifier,)
+        ).fetchone()
+        if user is None:
+            raise wrong
+        now = datetime.now(UTC).isoformat()
+        rows = conn.execute(
+            "SELECT id, code_hash FROM user_codes WHERE user_id = ? AND used = 0 "
+            "AND expires_at > ?",
+            (user["id"], now),
+        ).fetchall()
+        wanted = hashlib.sha256(code.encode()).hexdigest()
+        match = next((r for r in rows if hmac.compare_digest(r["code_hash"], wanted)), None)
+        if match is None:
+            raise wrong
+        conn.execute("UPDATE user_codes SET used = 1 WHERE id = ?", (match["id"],))
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (hash_password(new_password), user["id"]),
+        )
+        # Whoever held the old password loses every session with it.
+        conn.execute("DELETE FROM sessions WHERE user_id = ?", (user["id"],))
+    return {"ok": True}
+
+
 @router.post("/logout")
 def logout(response: Response, user: CurrentUser):
     end_session(user["session_token"])
@@ -599,9 +702,9 @@ async def update_company(company_id: int, request: Request, user: CurrentUser):
             raise HTTPException(404, "Company not found")
         try:
             conn.execute(
-                f"UPDATE companies SET name = ?, branch = ?, slug = ?, "  # noqa: S608
+                f"UPDATE companies SET name = ?, branch = ?, slug = ?, updated_at = ?, "  # noqa: S608
                 f"{brand_sets}, {sets} WHERE id = ?",
-                (name, branch, slugify(name, branch),
+                (name, branch, slugify(name, branch), datetime.now(UTC).isoformat(),
                  *(brand[c] for c in BRAND_COLUMNS),
                  *(details[c] for c in COMPANY_DETAILS), company_id),
             )
@@ -610,6 +713,15 @@ async def update_company(company_id: int, request: Request, user: CurrentUser):
 
     await apply_pictures(form, company_id)
     return {"id": company_id, "name": name, "branch": branch}
+
+
+def touch_company(company_id: int) -> None:
+    """Mark a company as edited now."""
+    with connect() as conn:
+        conn.execute(
+            "UPDATE companies SET updated_at = ? WHERE id = ?",
+            (datetime.now(UTC).isoformat(), company_id),
+        )
 
 
 @router.delete("/companies/{company_id}")
@@ -1210,11 +1322,41 @@ def email_analytics(user: CurrentUser, company_id: int | None = None, days: int 
 
 
 @router.get("/analytics")
-def analytics(user: CurrentUser, company_id: int | None = None, days: int = 30):
-    """Views and taps over a window, with the window before it for contrast."""
-    if days not in analytics_window.DAYS:
+def analytics(
+    user: CurrentUser,
+    company_id: int | None = None,
+    contact_id: int | None = None,
+    days: int = 30,
+    start: str | None = None,
+    end: str | None = None,
+    grain: str = "day",
+):
+    """Views and taps over a window, with the window before it for contrast.
+
+    Either `days` back from today, or `start` and `end` as plain dates.
+    """
+    first = last = None
+    if start or end:
+        try:
+            first, last = date.fromisoformat(start or ""), date.fromisoformat(end or "")
+        except ValueError as e:
+            raise HTTPException(422, "Dates look like 2026-10-15") from e
+        if last < first:
+            raise HTTPException(422, "The end of the range is before its start")
+        if (last - first).days > 730:
+            raise HTTPException(422, "Two years is the longest range")
+    elif days not in analytics_window.DAYS:
         raise HTTPException(422, f"Pick a window of {analytics_window.DAYS} days")
-    return analytics_window.window(days, company_id=company_id)
+    if grain not in analytics_window.GRAIN_SQL:
+        raise HTTPException(422, "Group by day, week or month")
+    return analytics_window.window(
+        days,
+        company_id=company_id,
+        contact_id=contact_id,
+        first=first,
+        last=last,
+        grain=grain,
+    )
 
 
 @router.get("/contacts")

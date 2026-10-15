@@ -208,6 +208,7 @@ export type Company = {
   show_company_name: boolean | number;
   show_branch: boolean | number;
   share_message: string | null;
+  updated_at: string | null;
 } & Partial<Record<(typeof COMPANY_DETAILS)[number], string | null>>;
 
 /** The company switches, with the wording the admin reads. */
@@ -339,6 +340,7 @@ export function companyLabel(c: { name: string; branch?: string | null }): strin
 /** What one window of card_events looks like, for an admin or a card holder. */
 export type Analytics = {
   days: number;
+  grain: "day" | "week" | "month";
   from: string;
   to: string;
   totals: {

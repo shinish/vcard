@@ -7,7 +7,9 @@ import { use, useEffect, useState } from "react";
 import CopyLink from "../../../components/CopyLink";
 import ImagePicker from "../../../components/ImagePicker";
 import MediaManager from "../../../components/MediaManager";
+import PhoneField from "../../../components/PhoneField";
 import { Icon, type IconName } from "../../../components/icons";
+import { COUNTRIES } from "../../../lib/countries";
 import { DEFAULT_LANGUAGE, LANGUAGES, type Language } from "../../../lib/i18n";
 import {
   API,
@@ -210,12 +212,34 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="font-display text-2xl font-bold">{company?.name ?? "Company"}</h1>
             {company?.branch ? <span className="chip">{company.branch}</span> : null}
+            {company ? (
+              <span
+                className={`chip ${
+                  switches.public_sharing ? "bg-cyan/20 text-cyan-ink" : "bg-wash text-ink-soft"
+                }`}
+              >
+                {switches.public_sharing ? "Shared" : "Not shared"}
+              </span>
+            ) : null}
           </div>
           <p className="mt-1 text-sm text-ink-soft">
             Company details and card branding.{" "}
             {rows === null
               ? "Loading…"
               : `${people.length} ${people.length === 1 ? "person" : "people"} with a card.`}
+            {company?.updated_at ? (
+              <span className="ml-1">
+                Last edited{" "}
+                {new Date(company.updated_at).toLocaleString(undefined, {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+                .
+              </span>
+            ) : null}
           </p>
         </div>
 
@@ -307,7 +331,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                     className="field"
                   />
                 </label>
-                {(["website", "email", "phone"] as const).map((field) => (
+                {(["website", "email"] as const).map((field) => (
                   <label key={field} className="block space-y-1.5">
                     <span className="text-sm font-semibold text-ink-soft">
                       {DETAIL_LABELS[field]}
@@ -315,12 +339,19 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                     <input name={field} defaultValue={company?.[field] ?? ""} className="field" />
                   </label>
                 ))}
+                {company ? (
+                  <PhoneField
+                    name="phone"
+                    label={DETAIL_LABELS.phone}
+                    defaultValue={company.phone ?? ""}
+                  />
+                ) : null}
               </div>
 
               <fieldset className="mt-6">
                 <legend className="text-sm font-semibold text-ink-soft">Business address</legend>
                 <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                  {(["street", "city", "region", "postal", "country"] as const).map((field) => (
+                  {(["street", "city", "region", "postal"] as const).map((field) => (
                     <label
                       key={field}
                       className={`block space-y-1.5 ${field === "street" ? "sm:col-span-2" : ""}`}
@@ -329,6 +360,21 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                       <input name={field} defaultValue={company?.[field] ?? ""} className="field" />
                     </label>
                   ))}
+                  <label className="block space-y-1.5">
+                    <span className="text-sm text-ink-soft">{DETAIL_LABELS.country}</span>
+                    <select
+                      name="country"
+                      defaultValue={company?.country ?? ""}
+                      className="field bg-paper"
+                    >
+                      <option value="">Not set</option>
+                      {COUNTRIES.map((country) => (
+                        <option key={country} value={country}>
+                          {country}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
               </fieldset>
             </section>

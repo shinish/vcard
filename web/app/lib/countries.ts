@@ -32,3 +32,76 @@ function buildCountries(): string[] {
 }
 
 export const COUNTRIES = buildCountries();
+
+/** One country's name, from the browser rather than a hand-kept list. */
+export function countryName(code: string): string {
+  try {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+
+/** The flag emoji for a country, built from its letters. */
+export function flagOf(code: string): string {
+  return code
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .split("")
+    .map((letter) => String.fromCodePoint(127397 + letter.charCodeAt(0)))
+    .join("");
+}
+
+/** The same ISO codes as names-and-codes, for pickers that store a code. */
+export const REGIONS: { code: string; name: string }[] = ISO_CODES.split(" ")
+  .map((code) => ({ code, name: countryName(code) }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+export const DIAL_CODES: { code: string; dial: string }[] = [
+  { code: "OM", dial: "+968" },
+  { code: "AE", dial: "+971" },
+  { code: "SA", dial: "+966" },
+  { code: "QA", dial: "+974" },
+  { code: "BH", dial: "+973" },
+  { code: "KW", dial: "+965" },
+  { code: "IN", dial: "+91" },
+  { code: "PK", dial: "+92" },
+  { code: "BD", dial: "+880" },
+  { code: "LK", dial: "+94" },
+  { code: "PH", dial: "+63" },
+  { code: "EG", dial: "+20" },
+  { code: "JO", dial: "+962" },
+  { code: "LB", dial: "+961" },
+  { code: "TR", dial: "+90" },
+  { code: "GB", dial: "+44" },
+  { code: "IE", dial: "+353" },
+  { code: "DE", dial: "+49" },
+  { code: "FR", dial: "+33" },
+  { code: "NL", dial: "+31" },
+  { code: "IT", dial: "+39" },
+  { code: "ES", dial: "+34" },
+  { code: "CH", dial: "+41" },
+  { code: "SE", dial: "+46" },
+  { code: "US", dial: "+1" },
+  { code: "CA", dial: "+1" },
+  { code: "AU", dial: "+61" },
+  { code: "NZ", dial: "+64" },
+  { code: "SG", dial: "+65" },
+  { code: "MY", dial: "+60" },
+  { code: "ZA", dial: "+27" },
+  { code: "KE", dial: "+254" },
+  { code: "CN", dial: "+86" },
+  { code: "JP", dial: "+81" },
+  { code: "KR", dial: "+82" },
+];
+
+/** Split a stored number into its dial code and the rest. */
+export function splitDial(value: string): { dial: string; rest: string } {
+  const trimmed = (value || "").trim();
+  // Longest first, so +971 is not read as +97.
+  const match = [...DIAL_CODES]
+    .sort((a, b) => b.dial.length - a.dial.length)
+    .find((entry) => trimmed.startsWith(entry.dial));
+  if (!match) return { dial: "", rest: trimmed };
+  return { dial: match.dial, rest: trimmed.slice(match.dial.length).trim() };
+}

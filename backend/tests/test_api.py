@@ -6,6 +6,7 @@ share page is open without one, and a password change cannot happen without
 proving you know the current password.
 """
 
+import hashlib
 import io
 import os
 import pathlib
@@ -1095,3 +1096,112 @@ def test_the_monthly_report_is_owed_once_a_month_and_only_when_set_up(seeded):
 
     for key in ("notify_monthly", "notify_to", "zepto_token", "mail_from", "monthly_sent"):
         app_settings.put(key, "")
+
+
+def test_an_admin_with_an_email_can_reset_their_own_password_with_a_code(seeded):
+    root = sign_in("root", "super-secret-pw")
+    root.post(
+        "/api/admin/users",
+        data={"email": "forgetful@example.com", "password": "first-password-1"},
+    )
+    anon = TestClient(app)
+
+    # The form answers the same way whoever asks, so it cannot be used to find
+    # out which identifiers have accounts.
+    assert anon.post("/api/admin/forgot", data={"email": "nobody@example.com"}).json() == {
+        "ok": True
+    }
+    assert anon.post("/api/admin/forgot", data={"email": "root"}).json() == {"ok": True}
+
+    with connect() as conn:
+        before = conn.execute("SELECT COUNT(*) AS n FROM user_codes").fetchone()["n"]
+    assert before == 0  # neither of those had anywhere to send a code
+
+    assert anon.post("/api/admin/forgot", data={"email": "forgetful@example.com"}).json() == {
+        "ok": True
+    }
+    # The code is hashed; the test reads it the only way anyone else could not.
+    code = "123456"
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT uc.id FROM user_codes uc JOIN users u ON u.id = uc.user_id "
+            "WHERE u.email = 'forgetful@example.com' AND uc.used = 0"
+        ).fetchone()
+        assert row is not None
+        conn.execute(
+            "UPDATE user_codes SET code_hash = ? WHERE id = ?",
+            (hashlib.sha256(code.encode()).hexdigest(), row["id"]),
+        )
+
+    assert anon.post(
+        "/api/admin/reset",
+        data={"email": "forgetful@example.com", "code": "000000", "new_password": "second-pw-12"},
+    ).status_code == 422
+    assert anon.post(
+        "/api/admin/reset",
+        data={"email": "forgetful@example.com", "code": code, "new_password": "short"},
+    ).status_code == 422
+    assert anon.post(
+        "/api/admin/reset",
+        data={"email": "forgetful@example.com", "code": code, "new_password": "second-pw-12"},
+    ).status_code == 200
+
+    # The new password works, the old one does not, and the code is spent.
+    assert TestClient(app).post(
+        "/api/admin/login", data={"email": "forgetful@example.com", "password": "second-pw-12"}
+    ).status_code == 200
+    assert TestClient(app).post(
+        "/api/admin/login", data={"email": "forgetful@example.com", "password": "first-password-1"}
+    ).status_code == 401
+    assert anon.post(
+        "/api/admin/reset",
+        data={"email": "forgetful@example.com", "code": code, "new_password": "third-pw-123"},
+    ).status_code == 422
+
+
+def test_analytics_takes_a_date_range_and_groups_by_week_or_month(seeded):
+    from datetime import UTC, datetime, timedelta
+
+    root = sign_in("root", "super-secret-pw")
+    company = root.post("/api/admin/companies", data={"name": "Ranged Co"}).json()["id"]
+    contact = root.post(
+        "/api/admin/contacts", data={"first_name": "Ranged", "company_id": company}
+    ).json()["id"]
+
+    today = datetime.now(UTC)
+    with connect() as conn:
+        for back in (0, 1, 9, 40):
+            conn.execute(
+                "INSERT INTO card_events (contact_id, kind, at) VALUES (?, 'view', ?)",
+                (contact, (today - timedelta(days=back)).isoformat()),
+            )
+
+    first = (today - timedelta(days=13)).date().isoformat()
+    last = today.date().isoformat()
+    ranged = root.get(
+        f"/api/admin/analytics?company_id={company}&start={first}&end={last}"
+    ).json()
+    assert ranged["from"] == first and ranged["to"] == last
+    assert len(ranged["series"]) == 14
+    assert ranged["totals"]["views"] == 3  # the 40-day-old one is outside
+
+    weekly = root.get(
+        f"/api/admin/analytics?company_id={company}&start={first}&end={last}&grain=week"
+    ).json()
+    assert weekly["grain"] == "week"
+    assert len(weekly["series"]) <= 3
+    assert sum(point["views"] for point in weekly["series"]) == 3
+
+    monthly = root.get(
+        f"/api/admin/analytics?company_id={company}&start={first}&end={last}&grain=month"
+    ).json()
+    assert all(len(point["day"]) == 7 for point in monthly["series"])
+
+    # One card at a time, too.
+    assert root.get(f"/api/admin/analytics?contact_id={contact}&days=30").json()["totals"][
+        "views"
+    ] == 3
+
+    assert root.get("/api/admin/analytics?start=2026-10-10&end=2026-10-01").status_code == 422
+    assert root.get("/api/admin/analytics?start=nonsense&end=2026-10-01").status_code == 422
+    assert root.get("/api/admin/analytics?grain=hour").status_code == 422

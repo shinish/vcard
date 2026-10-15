@@ -147,6 +147,7 @@ def init() -> None:
                 "show_company_name": "INTEGER NOT NULL DEFAULT 1",
                 "show_branch": "INTEGER NOT NULL DEFAULT 1",
                 "share_message": "TEXT",
+                "updated_at": "TEXT",
             },
         )
         _accent_to_palette(conn)

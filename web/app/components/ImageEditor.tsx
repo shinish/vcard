@@ -127,6 +127,42 @@ async function render(
   return new File([blob], name, { type });
 }
 
+type Adjust = { bright: number; contrast: number; saturate: number; sharp: number };
+const NEUTRAL: Adjust = { bright: 0, contrast: 0, saturate: 0, sharp: 0 };
+
+/** Mirror the picture and hand back a new object URL.
+ *
+ *  Flipping the source rather than the view keeps the cropper, the preview and
+ *  the written file in agreement with no special case anywhere.
+ */
+async function mirror(src: string, axis: "x" | "y"): Promise<string> {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+  const canvas = document.createElement("canvas");
+  canvas.width = image.width;
+  canvas.height = image.height;
+  const ctx = canvas.getContext("2d")!;
+  ctx.translate(axis === "x" ? image.width : 0, axis === "y" ? image.height : 0);
+  ctx.scale(axis === "x" ? -1 : 1, axis === "y" ? -1 : 1);
+  ctx.drawImage(image, 0, 0);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) throw new Error("The browser could not flip the image.");
+  return URL.createObjectURL(blob);
+}
+
+/** Starting points for the sliders. Named by what they are for, not by a
+ *  filter-stack cliché: these are the four a card photo actually needs. */
+const PRESETS: { label: string; values: Adjust }[] = [
+  { label: "As it is", values: { bright: 0, contrast: 0, saturate: 0, sharp: 0 } },
+  { label: "Crisp", values: { bright: 4, contrast: 12, saturate: 4, sharp: 35 } },
+  { label: "Soft", values: { bright: 6, contrast: -8, saturate: -6, sharp: 0 } },
+  { label: "Black and white", values: { bright: 4, contrast: 10, saturate: -100, sharp: 20 } },
+];
+
 const FORMATS = [
   { type: "image/png", ext: "png", label: "PNG — keeps transparency" },
   { type: "image/jpeg", ext: "jpg", label: "JPEG — smallest for photos" },
@@ -139,9 +175,6 @@ const ADJUSTMENTS = [
   { key: "saturate", label: "Saturation" },
   { key: "sharp", label: "Sharpness" },
 ] as const;
-
-type Adjust = { bright: number; contrast: number; saturate: number; sharp: number };
-const NEUTRAL: Adjust = { bright: 0, contrast: 0, saturate: 0, sharp: 0 };
 
 /** One undoable state of the editor. */
 type Snap = {
@@ -286,7 +319,13 @@ export default function ImageEditor({
           { label: "3:2", value: 3 / 2 },
           { label: "Square", value: 1 },
         ]
-      : [];
+      : [
+          // A card photo is shown round, but what gets written can still be
+          // the whole frame: phones square it themselves on import.
+          { label: "Square", value: 1 },
+          { label: "Portrait", value: 3 / 4 },
+          { label: "As it is", value: null },
+        ];
 
   const shrink = area ? Math.min(1, maxEdge / Math.max(area.width, area.height)) : 1;
   const outW = area ? Math.round(area.width * shrink) : 0;
@@ -339,7 +378,9 @@ export default function ImageEditor({
               zoom={zoom}
               rotation={rotation}
               aspect={ratio === null ? (natural ?? 1) : ratio}
-              cropShape={round ? "round" : "rect"}
+              // a round mask only makes sense on a square crop; anything else
+              // would draw an oval and crop a rectangle
+              cropShape={round && ratio === 1 ? "round" : "rect"}
               showGrid={!round}
               restrictPosition={false}
               onCropChange={setCrop}
@@ -385,6 +426,23 @@ export default function ImageEditor({
           >
             Rotate 90°
           </button>
+          {(["x", "y"] as const).map((axis) => (
+            <button
+              key={axis}
+              type="button"
+              onClick={async () => {
+                if (!src) return;
+                const flipped = await mirror(src, axis);
+                setSrc((old) => {
+                  if (old && old !== flipped) URL.revokeObjectURL(old);
+                  return flipped;
+                });
+              }}
+              className="btn px-3 py-1.5"
+            >
+              Flip {axis === "x" ? "across" : "over"}
+            </button>
+          ))}
           <button
             type="button"
             onClick={() => step(-1)}
@@ -448,6 +506,29 @@ export default function ImageEditor({
           {area ? `${outW} × ${outH} px out` : "Drag to choose the crop"}
         </p>
 
+        <fieldset>
+          <legend className="font-display text-sm font-bold">Filters</legend>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {PRESETS.map((preset) => {
+              const on = (Object.keys(preset.values) as (keyof Adjust)[]).every(
+                (key) => adjust[key] === preset.values[key],
+              );
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => setAdjust(preset.values)}
+                  className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${
+                    on ? "grad-cyan border-cyan-deep" : "border-line hover:border-ink"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+
         <fieldset className="space-y-2">
           <legend className="font-display text-sm font-bold">Adjustments</legend>
           {ADJUSTMENTS.map((a) => (
@@ -455,7 +536,7 @@ export default function ImageEditor({
               <span className="w-20 shrink-0 text-ink-soft">{a.label}</span>
               <input
                 type="range"
-                min={a.key === "sharp" ? 0 : -60}
+                min={a.key === "sharp" ? 0 : a.key === "saturate" ? -100 : -60}
                 max={60}
                 step={1}
                 value={adjust[a.key]}
@@ -567,6 +648,32 @@ export default function ImageEditor({
               </span>
             </div>
           ))}
+        </div>
+
+        <div className="mt-4 rounded-xl border border-line p-3">
+          <p className="text-xs font-semibold text-ink-soft">On a card</p>
+          <div className="mt-2 overflow-hidden rounded-lg border border-line bg-paper">
+            <div className="grad-cyan flex h-9 items-center justify-center">
+              {!round && preview ? (
+                // eslint-disable-next-line @next/next/no-img-element -- a blob url
+                <img src={preview} alt="" className="max-h-7 max-w-[70%] object-contain" />
+              ) : null}
+            </div>
+            <div className="px-3 pb-3 text-center">
+              <span
+                className={`mx-auto -mt-5 block size-11 overflow-hidden rounded-full border-2 border-paper bg-wash ${
+                  round ? "" : "opacity-40"
+                }`}
+              >
+                {round && preview ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- a blob url
+                  <img src={preview} alt="" className="size-full object-cover" />
+                ) : null}
+              </span>
+              <span className="mt-1.5 block font-display text-[11px] font-bold">Your name</span>
+              <span className="block text-[10px] text-ink-soft">Job title</span>
+            </div>
+          </div>
         </div>
 
         {error ? (

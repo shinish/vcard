@@ -166,6 +166,19 @@ CREATE TABLE IF NOT EXISTS otp_codes (
 );
 CREATE INDEX IF NOT EXISTS idx_otp_contact ON otp_codes(contact_id, purpose);
 
+-- Codes for an administrator who has forgotten their password. Separate from
+-- otp_codes, which belongs to card holders: an admin is a different account in
+-- a different table, and mixing the two would need a nullable owner on both.
+CREATE TABLE IF NOT EXISTS user_codes (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  code_hash  TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used       INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_user_codes ON user_codes(user_id);
+
 -- Card holders sign in to their own page; admins keep their own sessions table.
 CREATE TABLE IF NOT EXISTS contact_sessions (
   token      TEXT PRIMARY KEY,

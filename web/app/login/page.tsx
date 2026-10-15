@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -26,7 +25,9 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [needsCode, setNeedsCode] = useState(false);
+  // password → code (two-step) · password → forgot → reset
+  const [mode, setMode] = useState<"password" | "code" | "forgot" | "reset">("password");
+  const [note, setNote] = useState<string | null>(null);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,7 +42,7 @@ export default function LoginPage() {
       const body = await res.json().catch(() => null);
       if (!res.ok) throw new Error(body?.detail ?? "Could not sign you in.");
       if (body?.needs_code) {
-        setNeedsCode(true);
+        setMode("code");
         setBusy(false);
         return;
       }
@@ -53,6 +54,57 @@ export default function LoginPage() {
           ? "Could not reach the server. Is the API running on port 8000?"
           : (cause as Error).message,
       );
+      setBusy(false);
+    }
+  }
+
+  /** Ask for a code, then set a new password with it. Both answer the same
+   *  way whoever asks, so neither can be used to find real accounts. */
+  async function askForCode(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await fetch("/api/admin/forgot", {
+        method: "POST",
+        body: new FormData(event.currentTarget),
+        credentials: "same-origin",
+      });
+      setNote("If that address has an account, a code is on its way. It lasts 30 minutes.");
+      setMode("reset");
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitReset(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const body = new FormData(form);
+    if (body.get("new_password") !== body.get("confirm_password")) {
+      setError("The two passwords do not match.");
+      return;
+    }
+    body.delete("confirm_password");
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/reset", {
+        method: "POST",
+        body,
+        credentials: "same-origin",
+      });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => null);
+        throw new Error(detail?.detail ?? "That did not work.");
+      }
+      setNote("Password changed. Sign in with it.");
+      setMode("password");
+    } catch (cause) {
+      setError((cause as Error).message);
+    } finally {
       setBusy(false);
     }
   }
@@ -272,15 +324,34 @@ export default function LoginPage() {
           </div>
 
           <h1 className="mt-9 text-center font-display text-[1.6rem] font-bold">
-            {needsCode ? "One more step" : "Welcome back"}
+            {
+              {
+                password: "Welcome back",
+                code: "One more step",
+                forgot: "Forgotten password",
+                reset: "Set a new password",
+              }[mode]
+            }
           </h1>
           <p className="mt-2 text-center text-sm text-ink-soft">
-            {needsCode
-              ? "Open your authenticator app and type the six digits it shows."
-              : "Sign in to your account to manage your digital contact cards."}
+            {
+              {
+                password: "Sign in to your account to manage your digital contact cards.",
+                code: "Open your authenticator app and type the six digits it shows.",
+                forgot:
+                  "We will email a one-time code to the address on your account. Accounts that sign in with a username are reset by another administrator.",
+                reset: "Type the code from the email and the password you want.",
+              }[mode]
+            }
           </p>
 
-          {needsCode ? (
+          {note ? (
+            <p aria-live="polite" className="confirm mt-4 rounded-lg bg-wash px-3 py-2 text-center text-sm">
+              {note}
+            </p>
+          ) : null}
+
+          {mode === "code" ? (
             <form onSubmit={submitCode} className="mt-7 space-y-4">
               <label className="block space-y-2">
                 <span className="text-sm font-semibold">Code, or a recovery code</span>
@@ -309,6 +380,98 @@ export default function LoginPage() {
                 Lost the phone? A recovery code works here once.
               </p>
             </form>
+          ) : mode === "forgot" ? (
+            <form onSubmit={askForCode} className="mt-7 space-y-4">
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold">Your email address</span>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  autoFocus
+                  placeholder="you@company.com"
+                  className="field py-3"
+                />
+              </label>
+              {error ? (
+                <p role="alert" className="confirm rounded-lg border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+                  {error}
+                </p>
+              ) : null}
+              <button type="submit" disabled={busy} className="btn btn-primary w-full py-3.5">
+                {busy ? "Sending…" : "Email me a code"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("password");
+                  setError(null);
+                  setNote(null);
+                }}
+                className="w-full text-center text-sm font-semibold text-cyan-ink hover:underline"
+              >
+                Back to sign in
+              </button>
+            </form>
+          ) : mode === "reset" ? (
+            <form onSubmit={submitReset} className="mt-7 space-y-4">
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold">Your email address</span>
+                <input name="email" type="email" required className="field py-3" />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold">The code from the email</span>
+                <input
+                  name="code"
+                  required
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="123456"
+                  className="field py-3 text-center font-mono text-lg tracking-[0.4em]"
+                />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold">New password</span>
+                <input
+                  name="new_password"
+                  type="password"
+                  required
+                  minLength={10}
+                  autoComplete="new-password"
+                  className="field py-3"
+                />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold">Repeat it</span>
+                <input
+                  name="confirm_password"
+                  type="password"
+                  required
+                  minLength={10}
+                  autoComplete="new-password"
+                  className="field py-3"
+                />
+              </label>
+              {error ? (
+                <p role="alert" className="confirm rounded-lg border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+                  {error}
+                </p>
+              ) : null}
+              <button type="submit" disabled={busy} className="btn btn-primary w-full py-3.5">
+                {busy ? "Saving…" : "Set the password"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("password");
+                  setError(null);
+                  setNote(null);
+                }}
+                className="w-full text-center text-sm font-semibold text-cyan-ink hover:underline"
+              >
+                Back to sign in
+              </button>
+            </form>
           ) : (
             <form onSubmit={submit} className="mt-7 space-y-4">
               <label className="block space-y-2">
@@ -332,11 +495,23 @@ export default function LoginPage() {
                 </span>
               </label>
 
-              <label className="block space-y-2">
-                <span className="flex items-center justify-between">
-                  <span className="text-sm font-semibold">Password</span>
-                  <span className="text-xs text-ink-soft">Another admin can reset it</span>
-                </span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="text-sm font-semibold">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("forgot");
+                      setError(null);
+                      setNote(null);
+                    }}
+                    className="text-xs font-semibold text-cyan-ink hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
                 <span className="relative block">
                   <span
                     aria-hidden="true"
@@ -345,6 +520,7 @@ export default function LoginPage() {
                     <Icon name="lock" className="size-4" />
                   </span>
                   <input
+                    id="password"
                     name="password"
                     type={show ? "text" : "password"}
                     required
@@ -361,7 +537,7 @@ export default function LoginPage() {
                     <Icon name={show ? "eye-off" : "eye"} className="size-4" />
                   </button>
                 </span>
-              </label>
+              </div>
 
               {error ? (
                 <p role="alert" className="confirm rounded-lg border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
@@ -383,12 +559,6 @@ export default function LoginPage() {
 
           <p className="mt-6 text-center text-sm text-ink-soft">
             No account? <span className="font-semibold text-ink">Contact your administrator</span>
-            <span className="mt-1 block">
-              Here for your own card?{" "}
-              <Link href="/portal/login" className="font-semibold text-cyan-ink hover:underline">
-                Sign in to your card
-              </Link>
-            </span>
           </p>
 
           <p className="mt-10 text-center text-xs text-ink-soft">
