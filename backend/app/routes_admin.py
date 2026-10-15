@@ -1409,6 +1409,18 @@ async def add_contact(request: Request, user: CurrentUser):
     single = read_single(form)
     rows = parse_fields(str(form.get("fields") or "") or None)
 
+    # The admin form pre-fills the company name and the caller may edit or
+    # clear it. A caller that never mentions `org` — a script, an import —
+    # gets the company's name rather than a card with no company on it. An
+    # empty `org` that was posted is left empty: that is someone's decision.
+    if "org" not in form:
+        with connect() as conn:
+            company = conn.execute(
+                "SELECT name FROM companies WHERE id = ?", (company_id,)
+            ).fetchone()
+        if company:
+            single["org"] = company["name"]
+
     contact_id, public_id = create_contact(company_id, single, rows)
     notify(
         "notify_card_created",

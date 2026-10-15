@@ -1205,3 +1205,23 @@ def test_analytics_takes_a_date_range_and_groups_by_week_or_month(seeded):
     assert root.get("/api/admin/analytics?start=2026-10-10&end=2026-10-01").status_code == 422
     assert root.get("/api/admin/analytics?start=nonsense&end=2026-10-01").status_code == 422
     assert root.get("/api/admin/analytics?grain=hour").status_code == 422
+
+
+def test_a_card_made_without_an_org_still_names_its_company(seeded):
+    """The admin form fills the company in; anything else should not lose it."""
+    root = sign_in("root", "super-secret-pw")
+    company = root.post("/api/admin/companies", data={"name": "Implied Co"}).json()["id"]
+
+    quiet = root.post(
+        "/api/admin/contacts", data={"first_name": "Scripted", "company_id": company}
+    ).json()["public_id"]
+    card = TestClient(app).get(f"/api/public/{quiet}").json()
+    assert card["org"] == "Implied Co"
+    assert "ORG:Implied Co" in unfold(TestClient(app).get(f"/api/public/{quiet}.vcf").text)
+
+    # A posted blank is a decision, not an omission.
+    blank = root.post(
+        "/api/admin/contacts",
+        data={"first_name": "Deliberate", "company_id": company, "org": ""},
+    ).json()["public_id"]
+    assert TestClient(app).get(f"/api/public/{blank}").json()["org"] in (None, "")
