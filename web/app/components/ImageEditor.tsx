@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
 
+import { Icon } from "./icons";
+
 type Shape = "round" | "rect";
 
 /** Brightness, contrast and saturation as one canvas/CSS filter string.
@@ -163,6 +165,17 @@ const PRESETS: { label: string; values: Adjust }[] = [
   { label: "Black and white", values: { bright: 4, contrast: 10, saturate: -100, sharp: 20 } },
 ];
 
+/** The control groups, as the designs arrange them. The canvas and the
+ *  preview stay put; only this column changes. */
+const PANELS = [
+  { key: "crop", text: "Crop", icon: "grid" },
+  { key: "filters", text: "Filters", icon: "eye" },
+  { key: "background", text: "Background", icon: "card" },
+  { key: "adjust", text: "Adjustments", icon: "gear" },
+] as const;
+
+type PanelKey = (typeof PANELS)[number]["key"];
+
 const FORMATS = [
   { type: "image/png", ext: "png", label: "PNG — keeps transparency" },
   { type: "image/jpeg", ext: "jpg", label: "JPEG — smallest for photos" },
@@ -221,6 +234,7 @@ export default function ImageEditor({
   const [custom, setCustom] = useState("#ffffff");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [panel, setPanel] = useState<PanelKey>("crop");
   const [preview, setPreview] = useState<string | null>(null);
   const previewRef = useRef<string | null>(null);
   // Undo history. A ref, because pushing to it must not itself re-run the
@@ -357,7 +371,7 @@ export default function ImageEditor({
   }
 
   return (
-    <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_14rem]">
+    <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1.1fr)_13rem]">
       {/* --- The picture itself ------------------------------------------- */}
       <div>
         <div
@@ -464,49 +478,78 @@ export default function ImageEditor({
           </button>
         </div>
 
-        <label className="mt-3 block space-y-1">
-          <span className="text-xs font-semibold text-ink-soft">Straighten — {rotation}°</span>
-          <input
-            type="range"
-            min={-180}
-            max={180}
-            step={1}
-            value={rotation}
-            onChange={(e) => setRotation(Number(e.target.value))}
-            className="w-full accent-brand"
-            aria-label="Rotate"
-          />
-        </label>
-
-        {ratios.length ? (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-ink-soft">Shape</span>
-            {ratios.map((r) => {
-              const on = r.value === null ? ratio === null : Math.abs(ratio! - r.value) < 0.001;
-              return (
-                <button
-                  key={r.label}
-                  type="button"
-                  onClick={() => setRatio(r.value)}
-                  className={`rounded-full border px-3 py-1 text-sm font-semibold ${
-                    on ? "grad-brand border-brand" : "border-line hover:border-ink"
-                  }`}
-                >
-                  {r.label}
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
       </div>
 
-      {/* --- Adjustments, background, format ------------------------------- */}
-      <div className="space-y-5">
+      {/* --- The controls, in the groups the designs name ------------------- */}
+      <div className="grid gap-4 sm:grid-cols-[8.5rem_minmax(0,1fr)]">
+        <nav className="flex gap-1 overflow-x-auto sm:flex-col sm:overflow-visible" aria-label="Controls">
+          {PANELS.map((group) => (
+            <button
+              key={group.key}
+              type="button"
+              onClick={() => setPanel(group.key)}
+              aria-current={panel === group.key ? "true" : undefined}
+              className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold ${
+                panel === group.key
+                  ? "bg-brand-wash text-brand-ink"
+                  : "text-ink-soft hover:bg-wash hover:text-ink"
+              }`}
+            >
+              <Icon name={group.icon} className="size-4 shrink-0" />
+              {group.text}
+            </button>
+          ))}
+        </nav>
+
+        <div className="min-w-0 space-y-5">
         <p className="chip">
           {area ? `${outW} × ${outH} px out` : "Drag to choose the crop"}
         </p>
 
-        <fieldset>
+        <fieldset hidden={panel !== "crop"}>
+          <legend className="font-display text-sm font-bold">Crop & resize</legend>
+          <label className="mt-2 block space-y-1">
+            <span className="text-xs font-semibold text-ink-soft">Straighten — {rotation}°</span>
+            <input
+              type="range"
+              min={-180}
+              max={180}
+              step={1}
+              value={rotation}
+              onChange={(e) => setRotation(Number(e.target.value))}
+              className="w-full accent-brand"
+              aria-label="Rotate"
+            />
+          </label>
+          {ratios.length ? (
+            <div className="mt-3">
+              <span className="text-xs font-semibold text-ink-soft">Shape</span>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {ratios.map((r) => {
+                  const on =
+                    r.value === null ? ratio === null : Math.abs(ratio! - r.value) < 0.001;
+                  return (
+                    <button
+                      key={r.label}
+                      type="button"
+                      onClick={() => setRatio(r.value)}
+                      className={`rounded-full border px-3 py-1 text-sm font-semibold ${
+                        on ? "grad-brand border-brand" : "border-line hover:border-ink"
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+          <p className="mt-3 text-xs text-ink-soft">
+            Drag the picture to move the crop; zoom, turn and flip are under the canvas.
+          </p>
+        </fieldset>
+
+        <fieldset hidden={panel !== "filters"}>
           <legend className="font-display text-sm font-bold">Filters</legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {PRESETS.map((preset) => {
@@ -529,11 +572,11 @@ export default function ImageEditor({
           </div>
         </fieldset>
 
-        <fieldset className="space-y-2">
+        <fieldset hidden={panel !== "adjust"} className="space-y-2">
           <legend className="font-display text-sm font-bold">Adjustments</legend>
           {ADJUSTMENTS.map((a) => (
-            <label key={a.key} className="flex items-center gap-3 text-sm">
-              <span className="w-20 shrink-0 text-ink-soft">{a.label}</span>
+            <label key={a.key} className="flex items-center gap-2 text-sm">
+              <span className="w-[4.5rem] shrink-0 text-xs text-ink-soft">{a.label}</span>
               <input
                 type="range"
                 min={a.key === "sharp" ? 0 : a.key === "saturate" ? -100 : -60}
@@ -543,12 +586,12 @@ export default function ImageEditor({
                 onChange={(e) => setAdjust({ ...adjust, [a.key]: Number(e.target.value) })}
                 className="min-w-0 flex-1 accent-brand"
               />
-              <span className="w-10 shrink-0 text-right font-mono text-xs">{adjust[a.key]}</span>
+              <span className="w-7 shrink-0 text-right font-mono text-xs">{adjust[a.key]}</span>
             </label>
           ))}
         </fieldset>
 
-        <fieldset>
+        <fieldset hidden={panel !== "background"}>
           <legend className="font-display text-sm font-bold">Background</legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {[
@@ -588,7 +631,7 @@ export default function ImageEditor({
           ) : null}
         </fieldset>
 
-        <label className="block space-y-1.5">
+        <label hidden={panel !== "background"} className="block space-y-1.5">
           <span className="font-display text-sm font-bold">Output format</span>
           <select
             value={format}
@@ -606,6 +649,7 @@ export default function ImageEditor({
             decides what travels over the network.
           </span>
         </label>
+        </div>
       </div>
 
       {/* --- What it will look like ---------------------------------------- */}
