@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "./icons";
-import { type Me, apiJson, companyLabel } from "../lib/api";
+import { apiJson, companyLabel } from "../lib/api";
 
 type Hits = {
   companies: { id: number; name: string; branch: string; contact_count: number }[];
@@ -19,16 +19,16 @@ type Hits = {
   }[];
 };
 
-/** The bar over every admin page: one search box and the account menu.
+/** The bar over every admin page: one search box. The account sits at the
+ *  foot of the sidebar, where a signed-in name belongs.
  *
  *  Search asks the API on a short delay rather than on every keystroke, and
  *  only from two characters — a one-letter search matches everything.
  */
-export default function TopBar({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
+export default function TopBar() {
   const [term, setTerm] = useState("");
   const [hits, setHits] = useState<Hits | null>(null);
   const [open, setOpen] = useState(false);
-  const [menu, setMenu] = useState(false);
   const box = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -38,10 +38,7 @@ export default function TopBar({ me, onSignOut }: { me: Me; onSignOut: () => voi
         event.preventDefault();
         box.current?.focus();
       }
-      if (event.key === "Escape") {
-        setOpen(false);
-        setMenu(false);
-      }
+      if (event.key === "Escape") setOpen(false);
     }
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
@@ -130,48 +127,6 @@ export default function TopBar({ me, onSignOut }: { me: Me; onSignOut: () => voi
         ) : null}
       </div>
 
-      <div className="relative shrink-0">
-        <button
-          type="button"
-          onClick={() => setMenu((v) => !v)}
-          aria-expanded={menu}
-          className="flex items-center gap-2 rounded-full border border-line py-1 pl-1 pr-3 hover:border-ink"
-        >
-          <span className="grad-brand flex size-9 items-center justify-center rounded-full font-display text-xs font-bold">
-            {(me.name || me.email).slice(0, 2).toUpperCase()}
-          </span>
-          <span className="hidden text-left text-xs leading-tight sm:block">
-            <span className="block font-semibold">{me.name || me.email}</span>
-            <span className="block text-ink-soft">Administrator</span>
-          </span>
-        </button>
-
-        {menu ? (
-          <div className="surface absolute right-0 top-full z-30 mt-2 w-48 p-2">
-            <Link
-              href="/admin/profile"
-              onClick={() => setMenu(false)}
-              className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-wash"
-            >
-              Your profile
-            </Link>
-            <Link
-              href="/admin/settings"
-              onClick={() => setMenu(false)}
-              className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-wash"
-            >
-              Settings
-            </Link>
-            <button
-              type="button"
-              onClick={onSignOut}
-              className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-wash"
-            >
-              Sign out
-            </button>
-          </div>
-        ) : null}
-      </div>
     </header>
   );
 }

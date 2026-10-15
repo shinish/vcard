@@ -115,6 +115,12 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
   const [wide, setWide] = useState(false);
   const [pick, setPick] = useState(0);
   const [moreOpen, setMoreOpen] = useState(false);
+  // Security applies to every administrator, so it lives in the global
+  // settings; it is shown here because this is the tab people open.
+  const [security, setSecurity] = useState<{ require_2fa: string; session_hours: string } | null>(
+    null,
+  );
+  const [securityNote, setSecurityNote] = useState<string | null>(null);
   // Bumped on every save so the preview iframe reloads the card.
   const [version, setVersion] = useState(0);
 
@@ -154,6 +160,12 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
     // The editor page links back to a named tab.
     const asked = new URLSearchParams(window.location.search).get("tab");
     if (asked && TABS.some((t) => t.key === asked)) setTab(asked);
+  }, []);
+
+  useEffect(() => {
+    apiJson<{ require_2fa: string; session_hours: string }>("/api/admin/settings")
+      .then((s) => setSecurity({ require_2fa: s.require_2fa, session_hours: s.session_hours }))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -237,9 +249,16 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
             {rows === null
               ? "Loading…"
               : `${people.length} ${people.length === 1 ? "person" : "people"} with a card.`}
-            {company?.updated_at ? (
-              <span className="ml-1">
-                Last edited{" "}
+
+          </p>
+        </div>
+
+        {company?.updated_at ? (
+          <p className="flex items-center gap-2 text-xs text-ink-soft">
+            <Icon name="calendar" className="size-4" />
+            <span>
+              Last updated
+              <span className="block font-semibold text-ink">
                 {new Date(company.updated_at).toLocaleString(undefined, {
                   day: "numeric",
                   month: "short",
@@ -247,11 +266,10 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
-                .
               </span>
-            ) : null}
+            </span>
           </p>
-        </div>
+        ) : null}
 
         <div className="flex flex-wrap items-center gap-2">
           {person ? (
@@ -262,7 +280,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
               className="btn"
             >
               <Icon name="share" className="size-4" />
-              View a card
+              View company cards
             </a>
           ) : null}
           <Link href={`/admin/contacts/new?company_id=${id}`} className="btn">
@@ -367,7 +385,8 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                 rewrite cards that already exist.
               </p>
 
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_13rem]">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block space-y-1.5">
                   <span className="text-sm font-semibold text-ink-soft">Company name *</span>
                   <input
@@ -404,6 +423,41 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                 ) : null}
               </div>
 
+              {/* The logo belongs with the details a card is built from, not
+                  on a tab of its own. The same picker, the same form. */}
+              <div className="space-y-2">
+                <span className="text-sm font-semibold text-ink-soft">Company logo</span>
+                <span className="flex h-32 items-center justify-center rounded-xl border border-line bg-wash p-3">
+                  {logoSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- served by the API
+                    <img src={logoSrc} alt="" className="max-h-full max-w-full object-contain" />
+                  ) : (
+                    <Icon name="building" className="size-8 text-ink-soft" />
+                  )}
+                </span>
+                <span className="flex flex-wrap gap-2">
+                  <Link
+                    href={`/admin/companies/${id}/image?field=logo`}
+                    className="btn px-3 py-1.5 text-xs"
+                  >
+                    <Icon name="grid" className="size-3.5" />
+                    {logoSrc ? "Edit image" : "Add a logo"}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setTab("branding")}
+                    className="btn px-3 py-1.5 text-xs"
+                  >
+                    Replace
+                  </button>
+                </span>
+                <span className="block text-xs text-ink-soft">
+                  512 × 512 px suits it best. PNG keeps transparency; a transparent logo sits on
+                  any template.
+                </span>
+              </div>
+              </div>
+
               <fieldset className="mt-6">
                 <legend className="text-sm font-semibold text-ink-soft">Business address</legend>
                 <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -436,6 +490,62 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                   </label>
                 </div>
               </fieldset>
+            </section>
+
+            {/* The templates again, as a strip: choosing one here is the same
+                control as on Card design, bound to the same form state. */}
+            <section hidden={tab !== "overview"} className="surface mt-6 p-6">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="font-display text-lg font-bold">Card templates</h2>
+                  <p className="text-sm text-ink-soft">
+                    Pick one and the cards in this company wear it.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTab("design")}
+                  className="text-sm font-semibold text-brand-ink hover:underline"
+                >
+                  All template settings
+                </button>
+              </div>
+
+              <div className="mt-4 flex snap-x gap-3 overflow-x-auto pb-2">
+                {THEMES.filter(
+                  (t) => OFFERED_THEMES.some((o) => o.key === t.key) || t.key === theme,
+                ).map((t) => (
+                  <label
+                    key={t.key}
+                    className={`block w-36 shrink-0 snap-start cursor-pointer rounded-xl border p-2 ${
+                      theme === t.key ? "border-brand ring-2 ring-brand/20" : "border-line hover:border-ink"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="theme"
+                      value={t.key}
+                      checked={theme === t.key}
+                      onChange={() => setTheme(t.key)}
+                      className="sr-only"
+                    />
+                    <span
+                      aria-hidden="true"
+                      className={`card-page tpl-${t.key} flex h-24 items-center justify-center rounded-lg`}
+                      style={paletteStyle(accents)}
+                    >
+                      <span className="block h-11 w-14 rounded border border-line bg-paper" />
+                    </span>
+                    <span className="mt-2 flex items-center justify-between gap-1">
+                      <span className="font-display text-sm font-semibold">{t.label}</span>
+                      {theme === t.key ? (
+                        <Icon name="check" className="size-3.5 text-brand" />
+                      ) : null}
+                    </span>
+                    <span className="block text-xs text-ink-soft">{t.hint}</span>
+                  </label>
+                ))}
+              </div>
             </section>
 
             {/* --- Branding ----------------------------------------------- */}
@@ -874,6 +984,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                   { id: "general", text: "General" },
                   { id: "defaults", text: "Card defaults" },
                   { id: "notifications", text: "Notifications" },
+                  { id: "security", text: "Security" },
                   { id: "privacy", text: "Sharing & privacy" },
                   { id: "data", text: "Data" },
                   { id: "danger", text: "Danger zone" },
@@ -1137,6 +1248,111 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                     <Icon name="chart" className="size-4" />
                     See this company&rsquo;s analytics
                   </Link>
+                </section>
+
+                <section id="security" className="surface p-6">
+                  <h2 className="font-display text-lg font-bold">Security</h2>
+                  <p className="mt-1 text-sm text-ink-soft">
+                    These apply to every administrator, not only this company.
+                  </p>
+
+                  {security ? (
+                    <form
+                      onSubmit={async (event) => {
+                        event.preventDefault();
+                        setSecurityNote(null);
+                        const res = await api("/api/admin/settings", {
+                          method: "PATCH",
+                          body: new FormData(event.currentTarget),
+                        });
+                        const body = await res.json().catch(() => null);
+                        if (!res.ok) {
+                          setError(body?.detail ?? "Could not save that.");
+                          return;
+                        }
+                        setSecurity({
+                          require_2fa: body.require_2fa,
+                          session_hours: body.session_hours,
+                        });
+                        setSecurityNote("Saved.");
+                      }}
+                      className="mt-4 max-w-md space-y-4"
+                    >
+                      <label className="flex items-start gap-3 text-sm">
+                        <input
+                          type="hidden"
+                          name="require_2fa"
+                          value={security.require_2fa === "1" ? "1" : "0"}
+                        />
+                        <input
+                          type="checkbox"
+                          checked={security.require_2fa === "1"}
+                          onChange={(e) =>
+                            setSecurity({
+                              ...security,
+                              require_2fa: e.target.checked ? "1" : "0",
+                            })
+                          }
+                          className="mt-0.5 size-4 shrink-0 accent-brand"
+                        />
+                        <span>
+                          <span className="font-semibold">Require two-step verification</span>
+                          <span className="block text-xs text-ink-soft">
+                            Every administrator must set it up. Anyone who has not can reach their
+                            own profile to do so, and nothing else.
+                          </span>
+                        </span>
+                      </label>
+
+                      <label className="block space-y-1.5">
+                        <span className="text-sm font-semibold text-ink-soft">
+                          A sign-in lasts
+                        </span>
+                        <select
+                          name="session_hours"
+                          value={security.session_hours || String(24 * 14)}
+                          onChange={(e) =>
+                            setSecurity({ ...security, session_hours: e.target.value })
+                          }
+                          className="field bg-paper"
+                        >
+                          {[
+                            { hours: 1, label: "1 hour" },
+                            { hours: 8, label: "8 hours — a working day" },
+                            { hours: 24, label: "A day" },
+                            { hours: 24 * 14, label: "A fortnight" },
+                            { hours: 24 * 90, label: "90 days" },
+                          ].map((c) => (
+                            <option key={c.hours} value={c.hours}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="block text-xs text-ink-soft">
+                          Applies at the next sign-in; sessions already open keep what they were
+                          given.
+                        </span>
+                      </label>
+
+                      <p className="text-xs text-ink-soft">
+                        Restricting who may edit a card is not offered: every administrator spans
+                        every company here, so there is no narrower role to grant.
+                      </p>
+
+                      <div className="flex items-center gap-3">
+                        <button type="submit" className="btn btn-primary">
+                          Save security settings
+                        </button>
+                        {securityNote ? (
+                          <span aria-live="polite" className="confirm text-sm text-ink-soft">
+                            {securityNote}
+                          </span>
+                        ) : null}
+                      </div>
+                    </form>
+                  ) : (
+                    <p className="mt-3 text-sm text-ink-soft">Loading…</p>
+                  )}
                 </section>
 
                 <section id="data" className="surface p-6">

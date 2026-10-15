@@ -30,6 +30,8 @@ KEYS = {
     "notify_monthly": "NOTIFY_MONTHLY",
     # Which month's report has already gone out, so a restart cannot repeat it.
     "monthly_sent": "MONTHLY_SENT",
+    # Every administrator must carry two-step verification.
+    "require_2fa": "REQUIRE_2FA",
     # How many hours a sign-in lasts before it has to be done again.
     "session_hours": "SESSION_HOURS",
     # Salt behind the per-day visitor hash. Written once, never shown.

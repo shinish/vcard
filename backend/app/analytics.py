@@ -19,7 +19,7 @@ from .db import connect
 
 # Windows the UI offers. Anything else is refused by the routes rather than
 # clamped, so a typo in a URL cannot quietly answer about the wrong period.
-DAYS = (7, 30, 90, 365)
+DAYS = (7, 14, 30, 90, 365)
 
 JOINED = "FROM card_events e JOIN contacts c ON c.id = e.contact_id"
 
@@ -132,16 +132,18 @@ def window(
         for r in conn.execute(
             f"SELECT {GRAIN_SQL[grain]} AS day, "
             "COUNT(*) FILTER (WHERE e.kind = 'view') AS views, "
-            "COUNT(*) FILTER (WHERE e.kind != 'view') AS clicks "
+            "COUNT(*) FILTER (WHERE e.kind != 'view') AS clicks, "
+            "COUNT(*) FILTER (WHERE e.kind = 'save') AS saves, "
+            "COUNT(*) FILTER (WHERE e.kind = 'share') AS shares "
             f"{JOINED} WHERE e.at >= ? AND e.at < ?{scope} GROUP BY day",
             (start, stop, *narrow),
         ):
             key = r["day"]
             if grain == "week":
                 key = label_of(date.fromisoformat(r["day"]), "week")
-            bucket = rows.setdefault(key, {"views": 0, "clicks": 0})
-            bucket["views"] += r["views"]
-            bucket["clicks"] += r["clicks"]
+            bucket = rows.setdefault(key, {"views": 0, "clicks": 0, "saves": 0, "shares": 0})
+            for column in ("views", "clicks", "saves", "shares"):
+                bucket[column] += r[column]
         by_kind = (
             f"SELECT e.kind, COUNT(*) AS n {JOINED} "
             f"WHERE e.at >= ? AND e.at < ? AND e.kind != 'view'{scope} "
@@ -199,6 +201,27 @@ def window(
                 (start, stop, *narrow, top),
             )
         ]
+        born = (
+            "SELECT c.created_at AS at FROM contacts c "
+            "WHERE c.created_at >= ? AND c.created_at < ?"
+        )
+        if company_id is not None and contact_id is None:
+            born += " AND c.company_id = ?"
+            born_args: tuple = (company_id,)
+        elif contact_id is not None:
+            born += " AND c.id = ?"
+            born_args = (contact_id,)
+        else:
+            born_args = ()
+        made: dict[str, int] = {}
+        for r in conn.execute(born, (start, stop, *born_args)):
+            key = label_of(date.fromisoformat(r["at"][:10]), grain)
+            made[key] = made.get(key, 0) + 1
+        new_cards = sum(made.values())
+        new_before = len(
+            conn.execute(born, (earlier, start, *born_args)).fetchall()
+        )
+
         if contact_id is not None:
             cards = 1
         else:
@@ -214,8 +237,11 @@ def window(
     series = [
         {
             "day": key,
-            "views": rows.get(key, {}).get("views", 0),
-            "clicks": rows.get(key, {}).get("clicks", 0),
+            **{
+                column: rows.get(key, {}).get(column, 0)
+                for column in ("views", "clicks", "saves", "shares")
+            },
+            "new_cards": made.get(key, 0),
         }
         for key in buckets(begin, finish, grain)
     ]
@@ -241,10 +267,13 @@ def window(
         "grain": grain,
         "from": start,
         "to": str(finish),
-        "totals": {**totals, "cards": cards},
+        "totals": {**totals, "cards": cards, "new_cards": new_cards},
         "change": {
-            k: _change(totals[k], before[k])
-            for k in ("views", "clicks", "saves", "shares", "visitors")
+            **{
+                k: _change(totals[k], before[k])
+                for k in ("views", "clicks", "saves", "shares", "visitors", "active_cards")
+            },
+            "new_cards": _change(new_cards, new_before),
         },
         "series": series,
         "actions": actions,

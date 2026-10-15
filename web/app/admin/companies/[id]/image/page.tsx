@@ -6,7 +6,7 @@ import { Suspense, use, useCallback, useEffect, useState } from "react";
 
 import ImageEditor from "../../../../components/ImageEditor";
 import { Icon, type IconName } from "../../../../components/icons";
-import { API, type Company, api, apiJson, companyLabel } from "../../../../lib/api";
+import { API, COMPANY_DETAILS, type Company, api, apiJson, companyLabel } from "../../../../lib/api";
 
 /** Which company picture this page is editing. Both live on the company, so
  *  both are edited here; a person's photo belongs to that person and is edited
@@ -116,10 +116,36 @@ function Editor({ id }: { id: string }) {
     setBusy(true);
     setError(null);
     try {
+      // PATCH rewrites every column it knows, so a save that mentions only
+      // the picture would blank the rest of the record. Send the company back
+      // as it was loaded, with the new picture alongside.
       const body = new FormData();
-      // PATCH rewrites the record, so the identity rides along with the file.
       body.set("name", company.name);
       body.set("branch", company.branch ?? "");
+      for (const detail of COMPANY_DETAILS) body.set(detail, company[detail] ?? "");
+      body.set("theme", company.theme ?? "plain");
+      body.set("language", company.language ?? "en");
+      body.set("font", company.font ?? "poppins");
+      body.set("logo_position", company.logo_position ?? "top-center");
+      body.set("logo_scale", String(company.logo_scale ?? 100));
+      body.set("wallpaper_fit", company.wallpaper_fit ?? "cover");
+      body.set("accents", JSON.stringify(company.accents ?? []));
+      body.set("share_message", company.share_message ?? "");
+      body.set("notify_to", company.notify_to ?? "");
+      for (const flag of [
+        "show_qr",
+        "show_qr_download",
+        "require_consent",
+        "public_sharing",
+        "allow_indexing",
+        "allow_save",
+        "show_company_name",
+        "show_branch",
+        "notify_created",
+        "notify_updated",
+      ] as const) {
+        body.set(flag, company[flag] ? "1" : "0");
+      }
       body.set(field, edited);
       const res = await api(`/api/admin/companies/${id}`, { method: "PATCH", body });
       if (!res.ok) {

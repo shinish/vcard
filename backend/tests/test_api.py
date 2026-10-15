@@ -1357,3 +1357,29 @@ def test_the_session_cookie_is_secure_only_when_the_request_was(seeded):
     )
     assert secured.status_code == 200
     assert "secure" in secured.headers["set-cookie"].lower()
+
+
+def test_requiring_two_step_leaves_the_door_to_setting_it_up(seeded):
+    """The requirement must not lock an admin out of the page that satisfies it."""
+    from app import settings as app_settings
+    from app import totp
+
+    root = sign_in("root", "super-secret-pw")
+    try:
+        app_settings.put("require_2fa", "1")
+
+        # The session is real, but everything except the account is closed.
+        assert root.get("/api/admin/companies").status_code == 403
+        assert root.get("/api/admin/me").status_code == 200
+        started = root.post("/api/admin/me/2fa/start")
+        assert started.status_code == 200
+
+        secret = started.json()["secret"]
+        code = totp.code_at(secret, int(time.time() // totp.STEP))
+        assert root.post("/api/admin/me/2fa/confirm", data={"code": code}).status_code == 200
+
+        # Satisfied: the rest of the admin opens again.
+        assert root.get("/api/admin/companies").status_code == 200
+    finally:
+        app_settings.put("require_2fa", "0")
+        root.post("/api/admin/me/2fa/off", data={"password": "super-secret-pw"})

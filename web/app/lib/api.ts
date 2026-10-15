@@ -296,6 +296,8 @@ export type Dashboard = {
     contact_count: number;
   }[];
   recent: {
+    email: string | null;
+    photo_url: string | null;
     id: number;
     public_id: string;
     first_name: string;
@@ -366,9 +368,20 @@ export type Analytics = {
     active_cards: number;
     cards: number;
     visitors: number;
+    new_cards: number;
   };
-  change: Record<"views" | "clicks" | "saves" | "shares" | "visitors", number | null>;
-  series: { day: string; views: number; clicks: number }[];
+  change: Record<
+    "views" | "clicks" | "saves" | "shares" | "visitors" | "active_cards" | "new_cards",
+    number | null
+  >;
+  series: {
+    day: string;
+    views: number;
+    clicks: number;
+    saves: number;
+    shares: number;
+    new_cards: number;
+  }[];
   actions: { kind: string; n: number; change: number | null }[];
   sources: { source: string; n: number }[];
   devices: { device: string; n: number }[];

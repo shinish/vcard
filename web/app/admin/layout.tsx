@@ -14,6 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [me, setMe] = useState<Me | null>(null);
   const [failed, setFailed] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
 
   useEffect(() => {
     apiJson<Me>("/api/admin/me")
@@ -79,10 +80,57 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
+        {/* The account, at the foot of the nav: who you are is not a page
+            action, and this is where a signed-in name is looked for. */}
+        <div className="relative mt-4 border-t border-white/10 pt-3 sm:mt-auto">
+          <button
+            type="button"
+            onClick={() => setAccountOpen((v) => !v)}
+            aria-expanded={accountOpen}
+            className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-white/[0.07]"
+          >
+            <span className="grad-brand flex size-9 shrink-0 items-center justify-center rounded-full font-display text-xs font-bold">
+              {(me.name || me.email).slice(0, 2).toUpperCase()}
+            </span>
+            <span className="min-w-0 flex-1 text-xs leading-tight">
+              <span className="block truncate font-semibold text-white">
+                {me.name || me.email}
+              </span>
+              <span className="block text-white/55">Administrator</span>
+            </span>
+            <Icon name="arrow-right" className="size-4 -rotate-90 text-white/45" />
+          </button>
+
+          {accountOpen ? (
+            <div className="surface absolute bottom-full left-0 right-0 z-30 mb-2 p-2">
+              <Link
+                href="/admin/profile"
+                onClick={() => setAccountOpen(false)}
+                className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-wash"
+              >
+                Your profile
+              </Link>
+              <Link
+                href="/admin/settings"
+                onClick={() => setAccountOpen(false)}
+                className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-wash"
+              >
+                Settings
+              </Link>
+              <button
+                type="button"
+                onClick={signOut}
+                className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-wash"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : null}
+        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar me={me} onSignOut={signOut} />
+        <TopBar />
         <main className="min-w-0 flex-1 px-5 py-8 sm:px-9">
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>

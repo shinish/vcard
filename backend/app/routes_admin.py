@@ -1128,6 +1128,7 @@ async def write_settings(request: Request, user: CurrentUser):
         "notify_card_updated",
         "notify_admin_added",
         "notify_monthly",
+        "require_2fa",
     ):
         if switch in form:
             app_settings.put(switch, "1" if str(form.get(switch)) == "1" else "0")
@@ -1257,6 +1258,10 @@ def dashboard(user: CurrentUser):
         ).fetchall()
         recent = conn.execute(
             "SELECT c.id, c.public_id, c.first_name, c.last_name, c.job_title, c.updated_at, "
+            "c.photo_path, "
+            # an address lives in the fields, not in a column
+            "(SELECT value FROM contact_fields f WHERE f.contact_id = c.id "
+            " AND f.kind = 'email' ORDER BY f.position, f.id LIMIT 1) AS email, "
             "co.name AS company, co.branch AS branch, co.id AS company_id "
             "FROM contacts c JOIN companies co ON co.id = c.company_id "
             "ORDER BY c.updated_at DESC LIMIT 8"
@@ -1264,7 +1269,15 @@ def dashboard(user: CurrentUser):
     return {
         "totals": dict(totals),
         "companies": [dict(r) for r in companies],
-        "recent": [dict(r) for r in recent],
+        "recent": [
+            {
+                **{k: r[k] for k in r.keys() if k != "photo_path"},
+                "photo_url": (
+                    f"/api/public/{r['public_id']}/photo.jpg" if r["photo_path"] else None
+                ),
+            }
+            for r in recent
+        ],
         "busiest": [dict(r) for r in busiest],
     }
 

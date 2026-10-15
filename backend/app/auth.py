@@ -119,6 +119,17 @@ def _resolve(request: Request, allow_pending: bool) -> sqlite3.Row:
         raise HTTPException(403, "This account is disabled")
     if not allow_pending and row["session_pending"]:
         raise HTTPException(401, "Enter your one-time code")
+
+    # With two-step required, an administrator who has not set it up can reach
+    # their own account and nothing else — otherwise the requirement would lock
+    # them out of the very page where they would satisfy it.
+    if not row["totp_enabled"]:
+        from . import settings
+
+        if settings.flag("require_2fa") and not request.url.path.startswith("/api/admin/me"):
+            raise HTTPException(
+                403, "Two-step verification is required. Set it up on your profile."
+            )
     return row
 
 
