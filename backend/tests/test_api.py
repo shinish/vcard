@@ -1227,42 +1227,44 @@ def test_a_card_made_without_an_org_still_names_its_company(seeded):
     assert TestClient(app).get(f"/api/public/{blank}").json()["org"] in (None, "")
 
 
-def test_a_company_photo_stands_in_for_a_card_without_one(seeded):
-    """A card with no photo wears the company's; their own always wins."""
+def test_a_company_default_photo_is_copied_onto_each_new_card(seeded):
+    """Seeded, not pointed at: later changes leave existing cards alone."""
     root = sign_in("root", "super-secret-pw")
     company = root.post(
         "/api/admin/companies",
         data={"name": "Faces Ltd"},
         files={"photo": ("default.jpg", jpeg_bytes(), "image/jpeg")},
     ).json()["id"]
-
     saved = root.get(f"/api/admin/companies/{company}").json()
     assert saved["photo_path"] and saved["photo_small_path"]
     assert root.get(f"/api/admin/companies/{company}/photo.jpg").status_code == 200
 
     anon = TestClient(app)
-    bare = root.post(
-        "/api/admin/contacts", data={"first_name": "Faceless", "company_id": company}
+    seeded_card = root.post(
+        "/api/admin/contacts", data={"first_name": "Seeded", "company_id": company}
     ).json()["public_id"]
-    card = anon.get(f"/api/public/{bare}").json()
-    assert card["photo_url"] == f"/api/public/{bare}/photo.jpg"
-    assert card["photo_is_company"] is True
-    assert anon.get(f"/api/public/{bare}/photo.jpg").status_code == 200
-    # ...and it rides into the contact file, which is the point of having one
-    assert "PHOTO;ENCODING=b" in unfold(anon.get(f"/api/public/{bare}.vcf").text)
+    card = anon.get(f"/api/public/{seeded_card}").json()
+    # Their own photo now, with both copies written under their own id.
+    assert card["photo_url"] == f"/api/public/{seeded_card}/photo.jpg"
+    assert anon.get(f"/api/public/{seeded_card}/photo.jpg").status_code == 200
+    assert "PHOTO;ENCODING=b" in unfold(anon.get(f"/api/public/{seeded_card}.vcf").text)
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT photo_path, photo_small_path FROM contacts WHERE public_id = ?",
+            (seeded_card,),
+        ).fetchone()
+    assert row["photo_path"] == f"{seeded_card}.jpg"
+    assert row["photo_small_path"] == f"{seeded_card}-s.jpg"
 
-    theirs = root.post(
-        "/api/admin/contacts",
-        data={"first_name": "Pictured", "company_id": company},
-        files={"photo": ("mine.jpg", jpeg_bytes(), "image/jpeg")},
-    ).json()["public_id"]
-    own = anon.get(f"/api/public/{theirs}").json()
-    assert own["photo_is_company"] is False
-
-    # Removing it puts the cards back to no photo at all.
+    # Dropping the company's default does not take it off cards already made.
     root.patch(
         f"/api/admin/companies/{company}",
         data={"name": "Faces Ltd", "branch": "", "remove_photo": "1"},
     )
+    assert anon.get(f"/api/public/{seeded_card}/photo.jpg").status_code == 200
+
+    # ...and with no default left, a new card simply has no photo.
+    bare = root.post(
+        "/api/admin/contacts", data={"first_name": "Bare", "company_id": company}
+    ).json()["public_id"]
     assert anon.get(f"/api/public/{bare}").json()["photo_url"] is None
-    assert anon.get(f"/api/public/{bare}/photo.jpg").status_code == 404

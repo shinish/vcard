@@ -25,7 +25,7 @@ const FIELDS = {
   photo: {
     title: "Edit default photo",
     blurb:
-      "The face a card wears when its holder has none of their own. Square and round-cropped, the way a phone shows a contact.",
+      "Copied onto each new card that arrives without a photo. Square and round-cropped, the way a phone shows a contact; cards already made keep what they have.",
     file: "photo.jpg",
     shape: "round" as const,
     aspect: 1,

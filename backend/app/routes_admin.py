@@ -12,6 +12,7 @@ import hmac
 import json
 import re
 import secrets
+import shutil
 import sqlite3
 import tempfile
 from datetime import UTC, date, datetime, timedelta
@@ -1430,6 +1431,37 @@ def load_contact(contact_id: int):
         return row, field_rows(conn, row["id"])
 
 
+def seed_photo(company_id: int, contact_id: int, public_id: str) -> None:
+    """Give a new card the company's default photo as its own.
+
+    Copied rather than pointed at: from this moment it is that person's photo,
+    so changing the company's default later leaves existing cards alone — the
+    same promise the phone number and address already make.
+    """
+    with connect() as conn:
+        company = conn.execute(
+            "SELECT photo_path, photo_small_path FROM companies WHERE id = ?", (company_id,)
+        ).fetchone()
+    if company is None or not company["photo_path"]:
+        return
+
+    pairs = (
+        (company["photo_path"], f"{public_id}.jpg"),
+        (company["photo_small_path"], f"{public_id}-s.jpg"),
+    )
+    copied: list[str] = []
+    for source, target in pairs:
+        if not source or not (UPLOADS / source).exists():
+            return
+        shutil.copyfile(UPLOADS / source, UPLOADS / target)
+        copied.append(target)
+    with connect() as conn:
+        conn.execute(
+            "UPDATE contacts SET photo_path = ?, photo_small_path = ? WHERE id = ?",
+            (*copied, contact_id),
+        )
+
+
 async def store_photo(upload: UploadFile, public_id: str) -> tuple[str, str]:
     try:
         display, embed = f"{public_id}.jpg", f"{public_id}-s.jpg"
@@ -1460,6 +1492,11 @@ async def add_contact(request: Request, user: CurrentUser):
             single["org"] = company["name"]
 
     contact_id, public_id = create_contact(company_id, single, rows)
+    upload = form.get("photo")
+    if not (isinstance(upload, UploadFile) and upload.filename):
+        # No photo of their own: start them on the company's default, if it
+        # has one. They can replace it like any other photo.
+        seed_photo(company_id, contact_id, public_id)
     notify(
         "notify_card_created",
         "A new contact card",

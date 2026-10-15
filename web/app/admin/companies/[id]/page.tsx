@@ -418,7 +418,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                           : null
                       }
                       removeName="remove_photo"
-                      hint="Worn by anyone here who has no photo of their own — a building, a mark, or a team shot. Their own photo always wins."
+                      hint="Copied onto each new person here who arrives without a photo — a building, a mark, or a team shot. From then on it is theirs to change, and editing this leaves existing cards alone."
                     />
                     <Link href={`/admin/companies/${id}/image?field=photo`} className="btn mt-2">
                       <Icon name="grid" className="size-4" />

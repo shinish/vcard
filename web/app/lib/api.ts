@@ -66,8 +66,6 @@ export type Media = {
 };
 
 export type Contact = Record<SingleField, string | null> & {
-  /** True when the face on the card is the company's stand-in, not theirs. */
-  photo_is_company?: boolean;
   public_id: string;
   fields: ContactField[];
   photo_url: string | null;
