@@ -1268,3 +1268,38 @@ def test_a_company_default_photo_is_copied_onto_each_new_card(seeded):
         "/api/admin/contacts", data={"first_name": "Bare", "company_id": company}
     ).json()["public_id"]
     assert anon.get(f"/api/public/{bare}").json()["photo_url"] is None
+
+
+def test_a_company_can_name_its_own_notification_address(seeded):
+    """Per company, on top of the global one, and only for its own cards."""
+    root = sign_in("root", "super-secret-pw")
+    company = root.post("/api/admin/companies", data={"name": "Told Co"}).json()["id"]
+    fresh = root.get(f"/api/admin/companies/{company}").json()
+    assert fresh["notify_to"] is None
+    assert fresh["notify_created"] == 1  # on, but with nowhere to send yet
+    assert fresh["notify_updated"] == 0
+
+    full = {
+        "name": "Told Co",
+        "branch": "",
+        "theme": "plain",
+        "language": "en",
+        "font": "poppins",
+        "logo_position": "top-center",
+        "logo_scale": "100",
+        "wallpaper_fit": "cover",
+        "notify_to": "Office@Told.example",
+        "notify_created": "1",
+        "notify_updated": "1",
+    }
+    assert root.patch(f"/api/admin/companies/{company}", data=full).status_code == 200
+    told = root.get(f"/api/admin/companies/{company}").json()
+    assert told["notify_to"] == "office@told.example"  # stored lowercase
+    assert told["notify_updated"] == 1
+
+    # Creating a card still works with email unconfigured: notifications are
+    # best effort, never a reason to fail the request.
+    made = root.post(
+        "/api/admin/contacts", data={"first_name": "Noisy", "company_id": company}
+    )
+    assert made.status_code == 201

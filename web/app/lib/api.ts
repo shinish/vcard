@@ -220,6 +220,9 @@ export type Company = {
   show_company_name: boolean | number;
   show_branch: boolean | number;
   share_message: string | null;
+  notify_to: string | null;
+  notify_created: boolean | number;
+  notify_updated: boolean | number;
   updated_at: string | null;
 } & Partial<Record<(typeof COMPANY_DETAILS)[number], string | null>>;
 

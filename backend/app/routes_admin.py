@@ -84,6 +84,9 @@ BRAND_COLUMNS = (
     "show_company_name",
     "show_branch",
     "share_message",
+    "notify_to",
+    "notify_created",
+    "notify_updated",
 )
 
 # Switches, with what a form that never mentions them means. Create posts only
@@ -91,6 +94,8 @@ BRAND_COLUMNS = (
 # rather than read as off — that is how a new company used to end up with its
 # QR code switched off.
 SWITCHES = {
+    "notify_created": 1,
+    "notify_updated": 0,
     "show_qr": 1,
     "show_qr_download": 1,
     "require_consent": 0,
@@ -174,6 +179,7 @@ def branding(form) -> dict[str, object]:
             for key, default in SWITCHES.items()
         },
         "share_message": (str(form.get("share_message") or "").strip() or None),
+        "notify_to": (str(form.get("notify_to") or "").strip().lower() or None),
     }
 
     raw = str(form.get("accents") or "").strip()
@@ -1295,26 +1301,42 @@ def search(user: CurrentUser, q: str = ""):
     return {"companies": companies, "people": people}
 
 
-def notify(switch: str, subject: str, lines: list[str]) -> None:
-    """Tell the notification address, if that switch is on.
+def notify(switch: str, subject: str, lines: list[str], company_id: int | None = None) -> None:
+    """Tell whoever asked to hear about this, globally and per company.
 
     Best effort on purpose: a card is still created when the mail server is
     down, and the admin sees the result of the request they actually made.
     """
-    to = app_settings.get("notify_to").strip()
-    if not to or not app_settings.flag(switch) or not mailer.configured():
+    if not mailer.configured():
+        return
+
+    to: set[str] = set()
+    globally = app_settings.get("notify_to").strip()
+    if globally and app_settings.flag(switch):
+        to.add(globally.lower())
+
+    # A company hears about its own cards, if it named an address and the
+    # matching switch is on. Admin-level events have no company to ask.
+    column = {"notify_card_created": "notify_created", "notify_card_updated": "notify_updated"}
+    if company_id is not None and switch in column:
+        with connect() as conn:
+            row = conn.execute(
+                f"SELECT notify_to, {column[switch]} AS wanted "  # noqa: S608 - fixed map
+                "FROM companies WHERE id = ?",
+                (company_id,),
+            ).fetchone()
+        if row and row["notify_to"] and row["wanted"]:
+            to.add(row["notify_to"].strip().lower())
+
+    if not to:
         return
     safe = [escape(line) for line in lines]
-    try:
-        mailer.send(
-            to,
-            "",
-            subject,
-            "".join(f"<p style=\"font:15px Arial\">{line}</p>" for line in safe),
-            "\n".join(lines),
-        )
-    except mailer.MailError:
-        pass
+    body = "".join(f'<p style="font:15px Arial">{line}</p>' for line in safe)
+    for address in sorted(to):
+        try:
+            mailer.send(address, "", subject, body, "\n".join(lines))
+        except mailer.MailError:
+            pass
 
 
 def send_report(days: int = 30, company_id: int | None = None) -> str:
@@ -1505,6 +1527,7 @@ async def add_contact(request: Request, user: CurrentUser):
             + f" now has a card ({public_base_url()}/user/{public_id}).",
             f"Added by {user['name'] or user['email']}.",
         ],
+        company_id=company_id,
     )
     upload = form.get("photo")
     if isinstance(upload, UploadFile) and upload.filename:
@@ -1646,6 +1669,7 @@ async def edit_contact(contact_id: int, request: Request, user: CurrentUser):
             + f"'s card was edited ({public_base_url()}/user/{row['public_id']}).",
             f"Edited by {user['name'] or user['email']}.",
         ],
+        company_id=row["company_id"],
     )
 
     upload = form.get("photo")

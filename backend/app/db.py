@@ -149,6 +149,9 @@ def init() -> None:
                 "show_company_name": "INTEGER NOT NULL DEFAULT 1",
                 "show_branch": "INTEGER NOT NULL DEFAULT 1",
                 "share_message": "TEXT",
+                "notify_to": "TEXT",
+                "notify_created": "INTEGER NOT NULL DEFAULT 1",
+                "notify_updated": "INTEGER NOT NULL DEFAULT 0",
                 "updated_at": "TEXT",
             },
         )

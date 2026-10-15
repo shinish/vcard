@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS companies (
   show_company_name INTEGER NOT NULL DEFAULT 1,
   show_branch    INTEGER NOT NULL DEFAULT 1,
   share_message  TEXT,
+  -- Who hears about this company's own cards, on top of the global address.
+  notify_to      TEXT,
+  notify_created INTEGER NOT NULL DEFAULT 1,
+  notify_updated INTEGER NOT NULL DEFAULT 0,
   show_qr        INTEGER NOT NULL DEFAULT 1,
   show_qr_download INTEGER NOT NULL DEFAULT 1,
   -- JSON array of hex colours; the templates read them in order.

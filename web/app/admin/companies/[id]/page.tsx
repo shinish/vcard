@@ -104,13 +104,17 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
     allow_indexing: false,
     show_company_name: true,
     show_branch: true,
+    notify_created: true,
+    notify_updated: false,
   });
   const [shareMessage, setShareMessage] = useState("");
+  const [notifyTo, setNotifyTo] = useState("");
   const [media, setMedia] = useState<Media[]>([]);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [wide, setWide] = useState(false);
   const [pick, setPick] = useState(0);
+  const [moreOpen, setMoreOpen] = useState(false);
   // Bumped on every save so the preview iframe reloads the card.
   const [version, setVersion] = useState(0);
 
@@ -127,12 +131,15 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
         setFit(c.wallpaper_fit ?? DEFAULT_WALLPAPER_FIT);
         setShowQr(Boolean(c.show_qr ?? true));
         setShowQrDownload(Boolean(c.show_qr_download ?? true));
-        setSwitches(
-          Object.fromEntries(
+        setSwitches({
+          ...Object.fromEntries(
             COMPANY_SWITCHES.map((s) => [s.key, Boolean(c[s.key] ?? s.key !== "allow_indexing")]),
           ),
-        );
+          notify_created: Boolean(c.notify_created ?? true),
+          notify_updated: Boolean(c.notify_updated ?? false),
+        });
         setShareMessage(c.share_message ?? "");
+        setNotifyTo(c.notify_to ?? "");
       })
       .catch((e) => setError(e.message));
   }
@@ -262,6 +269,56 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
             <Icon name="plus" className="size-4" />
             Add a person
           </Link>
+
+          {/* The actions that are not the main one, out of the way but not
+              hidden: each is a real link, so middle-click works too. */}
+          <span className="relative">
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              aria-expanded={moreOpen}
+              aria-label="More actions"
+              className="btn px-3"
+            >
+              ⋯
+            </button>
+            {moreOpen ? (
+              <span
+                className="surface absolute right-0 top-full z-30 mt-2 flex w-56 flex-col p-2 text-sm"
+                onMouseLeave={() => setMoreOpen(false)}
+              >
+                <Link
+                  href={`/admin/companies/${id}/image?field=logo`}
+                  className="rounded-lg px-3 py-2 font-semibold hover:bg-wash"
+                >
+                  Edit the pictures
+                </Link>
+                <Link
+                  href={`/admin/analytics?company=${id}`}
+                  className="rounded-lg px-3 py-2 font-semibold hover:bg-wash"
+                >
+                  See the analytics
+                </Link>
+                <a
+                  href={`/api/admin/export.json?company_id=${id}`}
+                  download
+                  className="rounded-lg px-3 py-2 font-semibold hover:bg-wash"
+                >
+                  Export this company
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    setTab("settings");
+                  }}
+                  className="rounded-lg px-3 py-2 text-left font-semibold hover:bg-wash"
+                >
+                  Settings and deletion
+                </button>
+              </span>
+            ) : null}
+          </span>
           {EDITS.includes(tab) ? (
             <button type="submit" form="company" disabled={busy} className="btn btn-primary">
               <Icon name="check" className="size-4" />
@@ -815,6 +872,8 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
               <nav className="surface h-fit p-2">
                 {[
                   { id: "general", text: "General" },
+                  { id: "defaults", text: "Card defaults" },
+                  { id: "notifications", text: "Notifications" },
                   { id: "privacy", text: "Sharing & privacy" },
                   { id: "data", text: "Data" },
                   { id: "danger", text: "Danger zone" },
@@ -875,6 +934,141 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                       </div>
                     ))}
                   </dl>
+                </section>
+
+                <section id="defaults" className="surface p-6">
+                  <h2 className="font-display text-lg font-bold">Card defaults</h2>
+                  <p className="mt-1 text-sm text-ink-soft">
+                    What a new card in this company starts as. The same controls live on Branding
+                    and Card design; they are here too because this is where people look.
+                  </p>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <label className="block space-y-1.5">
+                      <span className="text-sm font-semibold text-ink-soft">Card template</span>
+                      <select
+                        value={theme}
+                        onChange={(e) => setTheme(e.target.value as ThemeKey)}
+                        className="field bg-paper"
+                      >
+                        {THEMES.filter(
+                          (t) =>
+                            OFFERED_THEMES.some((o) => o.key === t.key) || t.key === theme,
+                        ).map((t) => (
+                          <option key={t.key} value={t.key}>
+                            {t.label} — {t.hint}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="block space-y-1.5">
+                      <span className="text-sm font-semibold text-ink-soft">Card language</span>
+                      <select
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value as Language)}
+                        className="field bg-paper"
+                      >
+                        {LANGUAGES.map((l) => (
+                          <option key={l.code} value={l.code}>
+                            {l.native} — {l.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {[0, 1].map((slot) => (
+                      <label key={slot} className="block space-y-1.5">
+                        <span className="text-sm font-semibold text-ink-soft">
+                          {slot === 0 ? "Primary colour" : "Second colour"}
+                        </span>
+                        <span className="flex gap-2">
+                          <input
+                            type="color"
+                            value={accents[slot] ?? DEFAULT_ACCENT}
+                            onChange={(e) => {
+                              const next = [...accents];
+                              next[slot] = e.target.value;
+                              setAccents(next.filter(Boolean));
+                            }}
+                            aria-label={slot === 0 ? "Primary colour" : "Second colour"}
+                            className="h-11 w-14 shrink-0 rounded-lg border border-line bg-paper p-1"
+                          />
+                          <input
+                            value={accents[slot] ?? ""}
+                            onChange={(e) => {
+                              const next = [...accents];
+                              next[slot] = e.target.value;
+                              setAccents(next.filter(Boolean));
+                            }}
+                            placeholder={slot === 1 ? "Not set" : DEFAULT_ACCENT}
+                            pattern="#[0-9a-fA-F]{6}"
+                            className="field min-w-0 flex-1 font-mono text-sm"
+                          />
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-xs text-ink-soft">
+                    The full palette — up to {MAX_ACCENTS} colours, the logo and its placement —
+                    is on{" "}
+                    <button
+                      type="button"
+                      onClick={() => setTab("branding")}
+                      className="font-semibold text-brand-ink underline"
+                    >
+                      Branding
+                    </button>
+                    .
+                  </p>
+                </section>
+
+                <section id="notifications" className="surface p-6">
+                  <h2 className="font-display text-lg font-bold">Notifications</h2>
+                  <p className="mt-1 text-sm text-ink-soft">
+                    Who hears about this company&rsquo;s cards, on top of whoever is set for every
+                    company in{" "}
+                    <Link href="/admin/settings" className="font-semibold text-brand-ink hover:underline">
+                      Settings
+                    </Link>
+                    . Nothing is sent until email is set up there.
+                  </p>
+
+                  <label className="mt-4 block max-w-sm space-y-1.5">
+                    <span className="text-sm font-semibold text-ink-soft">Send to</span>
+                    <input
+                      name="notify_to"
+                      form="company"
+                      type="email"
+                      value={notifyTo}
+                      onChange={(e) => setNotifyTo(e.target.value)}
+                      placeholder="office@company.com"
+                      className="field"
+                    />
+                  </label>
+
+                  <div className="mt-4 space-y-3">
+                    <Switch
+                      name="notify_created"
+                      form="company"
+                      checked={switches.notify_created ?? true}
+                      onChange={(on) => setSwitches({ ...switches, notify_created: on })}
+                      label="A new card is created here"
+                      disabled={!notifyTo}
+                    />
+                    <Switch
+                      name="notify_updated"
+                      form="company"
+                      checked={switches.notify_updated ?? false}
+                      onChange={(on) => setSwitches({ ...switches, notify_updated: on })}
+                      label="A card here is edited"
+                      disabled={!notifyTo}
+                    />
+                  </div>
+
+                  <button type="submit" form="company" disabled={busy} className="btn btn-primary mt-4">
+                    {busy ? "Saving…" : "Save these settings"}
+                  </button>
                 </section>
 
                 <section id="privacy" className="surface p-6">
