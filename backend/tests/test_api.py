@@ -1333,3 +1333,27 @@ def test_bootstrap_creates_the_first_administrator_on_a_fresh_database(tmp_path,
 
     # A second run refuses rather than resetting someone's password by accident.
     assert bootstrap.main() == 1
+
+
+def test_the_session_cookie_is_secure_only_when_the_request_was(seeded):
+    """A Secure cookie is dropped by the browser on a plain-HTTP page, which
+    looks exactly like a wrong password. So the flag follows the request."""
+    root = sign_in("root", "super-secret-pw")
+    root.post(
+        "/api/admin/users", data={"email": "scheme@example.com", "password": "a-password-12"}
+    )
+
+    plain = TestClient(app).post(
+        "/api/admin/login", data={"email": "scheme@example.com", "password": "a-password-12"}
+    )
+    assert plain.status_code == 200
+    assert "secure" not in plain.headers["set-cookie"].lower()
+
+    # The proxy says it arrived over TLS, so the cookie insists on it.
+    secured = TestClient(app).post(
+        "/api/admin/login",
+        data={"email": "scheme@example.com", "password": "a-password-12"},
+        headers={"x-forwarded-proto": "https"},
+    )
+    assert secured.status_code == 200
+    assert "secure" in secured.headers["set-cookie"].lower()

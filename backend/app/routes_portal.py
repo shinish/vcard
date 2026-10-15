@@ -17,8 +17,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from . import analytics, mailer, signature
-from .auth import hash_password, verify_password
-from .config import COOKIE_SECURE, public_base_url
+from .auth import cookie_secure, hash_password, verify_password
+from .config import public_base_url
 from .contacts import field_rows, serialise
 from .db import connect
 
@@ -126,13 +126,13 @@ def current_holder(request: Request) -> sqlite3.Row:
 Holder = Annotated[sqlite3.Row, Depends(current_holder)]
 
 
-def set_cookie(response: Response, token: str, expires: datetime) -> None:
+def set_cookie(request: Request, response: Response, token: str, expires: datetime) -> None:
     response.set_cookie(
         PORTAL_COOKIE,
         token,
         httponly=True,
         samesite="lax",
-        secure=COOKIE_SECURE,
+        secure=cookie_secure(request),
         expires=expires,
         path="/",
     )
@@ -190,7 +190,7 @@ async def verify(request: Request, response: Response):
         # A new password ends sessions opened with the old one.
         conn.execute("DELETE FROM contact_sessions WHERE contact_id = ?", (row["id"],))
     token, expires = start_session(row["id"])
-    set_cookie(response, token, expires)
+    set_cookie(request, response, token, expires)
     return {"ok": True}
 
 
@@ -205,7 +205,7 @@ async def login(request: Request, response: Response):
     if not verify_password(password, row["password_hash"]):
         raise HTTPException(401, "Wrong email or password")
     token, expires = start_session(row["id"])
-    set_cookie(response, token, expires)
+    set_cookie(request, response, token, expires)
     return {"ok": True}
 
 

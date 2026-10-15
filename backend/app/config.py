@@ -21,4 +21,10 @@ PUBLIC_BASE_URL = _ENV_BASE
 _origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000")
 CORS_ORIGINS = [o.strip() for o in _origins.split(",") if o.strip()]
 # Cookies are only marked Secure behind HTTPS; locally that would stop them being set.
-COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "0") == "1"
+# Whether the session cookie carries the Secure flag. Unset means "follow the
+# request": a cookie handed out over HTTPS is marked secure, one handed out
+# over plain HTTP is not — because a browser silently drops a Secure cookie on
+# an insecure page, which looks exactly like a wrong password. Set it to 1 to
+# insist on HTTPS everywhere, which is what a public deployment should do.
+_cookie_secure = os.environ.get("COOKIE_SECURE")
+COOKIE_SECURE: bool | None = None if _cookie_secure is None else _cookie_secure == "1"

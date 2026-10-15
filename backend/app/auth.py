@@ -23,6 +23,21 @@ SESSION_COOKIE = "vcard_session"
 SESSION_DAYS = 14
 
 
+def cookie_secure(request: Request) -> bool:
+    """Should this session cookie be marked Secure?
+
+    Forced by COOKIE_SECURE when it is set; otherwise taken from how the
+    request actually arrived, trusting the proxy's X-Forwarded-Proto since
+    everything here sits behind one.
+    """
+    from .config import COOKIE_SECURE
+
+    if COOKIE_SECURE is not None:
+        return COOKIE_SECURE
+    forwarded = (request.headers.get("x-forwarded-proto") or "").split(",")[0].strip()
+    return (forwarded or request.url.scheme) == "https"
+
+
 def session_hours() -> int:
     """How long a sign-in lasts, from settings, falling back to a fortnight."""
     from . import settings  # here, not at import time: settings reads the db

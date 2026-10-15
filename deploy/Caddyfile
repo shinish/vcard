@@ -1,11 +1,16 @@
-# Caddy gets the certificate itself and renews it; nothing to remember.
-cards.truestaroman.com {
+# Plain HTTP on whatever address the host answers to. No certificate, no
+# redirect: the app is reached by its IP while the DNS record is pending.
+#
+# When cards.truestaroman.com resolves, replace this whole file with a site
+# block named after the domain — Caddy then gets its own certificate, and the
+# session cookie goes back to being Secure on its own, because the API marks
+# the flag from how the request arrived.
+:80 {
 	encode zstd gzip
 
-	# The API is routed here rather than through the front end. Next resolves
-	# its rewrites when it builds, so a baked-in API address would be wrong in
-	# every environment but the one that built it. The browser still sees a
-	# single origin, which is what keeps the session cookie first-party.
+	# The API is routed here rather than through the front end: Next resolves
+	# its rewrites when it builds, so a baked-in API address is wrong in every
+	# environment but the one that built the image.
 	handle /api/* {
 		reverse_proxy api:8000
 	}
@@ -15,7 +20,6 @@ cards.truestaroman.com {
 	}
 
 	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
 		-Server

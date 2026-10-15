@@ -6,7 +6,9 @@ services:
     image: ghcr.io/shinish/vcard-api:latest
     restart: unless-stopped
     environment:
-      COOKIE_SECURE: "1"
+      # Unset on purpose: the API marks the cookie Secure when the request
+      # arrived over HTTPS and not when it did not, so one image serves both
+      # the bare address today and the domain tomorrow.
       CORS_ORIGINS: "https://cards.truestaroman.com"
     volumes:
       # The database and the uploads outlive every deploy.

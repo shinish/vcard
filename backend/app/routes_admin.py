@@ -30,6 +30,7 @@ from . import geocode, mailer, photos, qr, routes_portal, totp
 from . import settings as app_settings
 from .auth import (
     SESSION_COOKIE,
+    cookie_secure,
     current_user,
     end_session,
     finish_2fa,
@@ -38,7 +39,7 @@ from .auth import (
     start_session,
     verify_password,
 )
-from .config import COOKIE_SECURE, UPLOADS, public_base_url
+from .config import UPLOADS, public_base_url
 from .contacts import (
     create_contact,
     field_rows,
@@ -310,7 +311,7 @@ async def login(response: Response, request: Request):
         token,
         httponly=True,
         samesite="lax",
-        secure=COOKIE_SECURE,
+        secure=cookie_secure(request),
         expires=expires,
         path="/",
     )
