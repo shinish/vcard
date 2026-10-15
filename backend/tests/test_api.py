@@ -114,10 +114,10 @@ def test_admin_endpoints_require_a_session(seeded):
 
 def test_a_plain_username_works_as_a_login(seeded):
     root = sign_in("root", "super-secret-pw")
-    made = root.post("/api/admin/users", data={"email": "admin", "password": "3Mergency!"})
+    made = root.post("/api/admin/users", data={"email": "admin", "password": "fixture-password-1"})
     assert made.status_code == 201, made.text
 
-    admin = sign_in("admin", "3Mergency!")
+    admin = sign_in("admin", "fixture-password-1")
     assert admin.get("/api/admin/me").json()["email"] == "admin"
     # every admin can do everything: there is no lesser role
     assert admin.post("/api/admin/companies", data={"name": "Umbrella"}).status_code == 201
