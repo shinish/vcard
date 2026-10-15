@@ -16,8 +16,12 @@
      step is for anything that has to be read. */
   --color-cyan-ink: #0b6670;
 
-  --font-display: var(--font-poppins), system-ui, sans-serif;
-  --font-sans: var(--font-nunito), system-ui, sans-serif;
+  /* The admin wears Inter, which is what the designs are set in: a neutral
+     grotesque that holds up at 11px in a table and at 44px in a headline.
+     Poppins and the rest stay loaded for the type sets a company can pick
+     for its own cards — see the .type-* classes below. */
+  --font-display: var(--font-inter), system-ui, sans-serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
 
   --radius-card: 1rem;
   --shadow-soft: 0 1px 2px rgb(13 19 21 / 0.04), 0 8px 24px -12px rgb(13 19 21 / 0.18);
@@ -32,14 +36,27 @@ html {
 body {
   color: var(--color-ink);
   font-family: var(--font-sans);
+  /* Inter's own optical sizing, so small labels stay open and headlines tighten */
+  font-optical-sizing: auto;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  letter-spacing: -0.015em;
 }
 
 /* --- Type sets ---------------------------------------------------------
    A company picks one; it swaps the two families the whole card reads from.
    Cairo carries Arabic properly, which the Latin faces do not. */
 .type-poppins {
-  --font-display: var(--font-poppins), system-ui, sans-serif;
-  --font-sans: var(--font-nunito), system-ui, sans-serif;
+  /* The admin wears Inter, which is what the designs are set in: a neutral
+     grotesque that holds up at 11px in a table and at 44px in a headline.
+     Poppins and the rest stay loaded for the type sets a company can pick
+     for its own cards — see the .type-* classes below. */
+  --font-display: var(--font-inter), system-ui, sans-serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
 }
 .type-inter {
   --font-display: var(--font-inter), system-ui, sans-serif;
@@ -249,6 +266,43 @@ body {
 }
 
 /* A picture behind the card. --wallpaper is set inline on the page. */
+/* Corporate: a navy field with a sheen across it, the way a glass tower
+   catches light. */
+.tpl-corporate {
+  background-color: #0d2847;
+  background-image:
+    linear-gradient(135deg, rgb(255 255 255 / 0.14) 0%, transparent 42%),
+    radial-gradient(90% 70% at 85% 10%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 70%),
+    linear-gradient(180deg, #123a63 0%, #0b1f38 60%, #081628 100%);
+}
+
+/* Glass: panes of frosted colour over a pale wash. */
+.tpl-glass {
+  background-color: #eaf2f5;
+  background-image:
+    linear-gradient(115deg, rgb(255 255 255 / 0.75) 0%, rgb(255 255 255 / 0.1) 38%, transparent 60%),
+    radial-gradient(60% 50% at 18% 20%, color-mix(in srgb, var(--accent) 38%, transparent), transparent 70%),
+    radial-gradient(55% 45% at 80% 75%, color-mix(in srgb, var(--accent-3) 32%, transparent), transparent 72%);
+}
+
+/* Luxury: near-black with one gold ribbon through it. */
+.tpl-luxury {
+  background-color: #0a0a0c;
+  background-image:
+    linear-gradient(105deg, transparent 32%, rgb(244 160 28 / 0.75) 48%, rgb(255 214 140 / 0.9) 52%, rgb(244 160 28 / 0.5) 57%, transparent 72%),
+    radial-gradient(80% 60% at 50% 110%, rgb(244 160 28 / 0.28), transparent 70%),
+    linear-gradient(180deg, #121216 0%, #09090b 100%);
+}
+
+/* Creative: three colour fields that overlap without blending to mud. */
+.tpl-creative {
+  background-color: #f7f4ff;
+  background-image:
+    radial-gradient(45% 45% at 12% 18%, color-mix(in srgb, var(--accent) 70%, transparent), transparent 70%),
+    radial-gradient(45% 45% at 88% 24%, color-mix(in srgb, var(--accent-3) 75%, transparent), transparent 72%),
+    radial-gradient(55% 50% at 50% 95%, color-mix(in srgb, var(--accent-2) 55%, transparent), transparent 75%);
+}
+
 .tpl-wallpaper {
   background-color: var(--accent);
   background-image: var(--wallpaper);

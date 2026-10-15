@@ -29,6 +29,9 @@ export type IconName =
   | "shield"
   | "card"
   | "arrow-right"
+  | "tap"
+  | "trend-up"
+  | "trend-down"
   | "check";
 
 const STROKE: Record<IconName, string> = {
@@ -58,6 +61,9 @@ const STROKE: Record<IconName, string> = {
   shield: "M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6l7-3Z",
   card: "M3 6.5h18v11H3zM3 10h18M6.5 14h4",
   "arrow-right": "M4 12h15m0 0-5.5-5.5M19 12l-5.5 5.5",
+  tap: "M9 11V5.5a1.8 1.8 0 1 1 3.5 0V11m0-1.5a1.8 1.8 0 1 1 3.5 0V12m0-1a1.8 1.8 0 1 1 3.5 0v4.5a5.5 5.5 0 0 1-5.5 5.5h-1.2a5.5 5.5 0 0 1-4.4-2.2L5 15.5a1.9 1.9 0 0 1 3-2.3l1 1",
+  "trend-up": "M4 17 10 11l3.5 3.5L20 8m0 0h-5m5 0v5",
+  "trend-down": "M4 8l6 6 3.5-3.5L20 17m0 0h-5m5 0v-5",
   check: "M4.5 12.5 9.5 17.5 19.5 7",
 };
 

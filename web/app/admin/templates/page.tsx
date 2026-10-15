@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   type Company,
   FONTS,
+  OFFERED_THEMES,
   THEMES,
   type ThemeKey,
   apiJson,
@@ -52,7 +53,11 @@ export default function TemplatesPage() {
       ) : null}
 
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {THEMES.map((theme) => {
+        {THEMES.filter(
+          (theme) =>
+            OFFERED_THEMES.some((o) => o.key === theme.key) ||
+            companies.some((c) => (c.theme ?? "plain") === theme.key),
+        ).map((theme) => {
           const taken = users(theme.key);
           return (
             <section key={theme.key} className="surface overflow-hidden">

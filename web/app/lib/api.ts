@@ -99,14 +99,24 @@ export type Contact = Record<SingleField, string | null> & {
 
 /** Background templates, matching the backend allow-list. */
 export const THEMES = [
-  { key: "plain", label: "Plain", hint: "Flat, quiet background" },
-  { key: "grid", label: "Grid", hint: "Light graph-paper lines" },
-  { key: "gradient", label: "Gradient", hint: "Accent fading into dark" },
-  { key: "ink", label: "Ink", hint: "Near-black backdrop" },
+  { key: "plain", label: "Minimal", hint: "Clean and professional" },
+  { key: "corporate", label: "Corporate", hint: "Modern business style" },
+  { key: "ink", label: "Executive", hint: "Dark premium design" },
+  { key: "gradient", label: "Gradient", hint: "Modern and vibrant" },
+  { key: "glass", label: "Glass", hint: "Frosted modern look" },
+  { key: "luxury", label: "Luxury", hint: "Elegant and refined" },
+  { key: "creative", label: "Creative", hint: "Bold and unique" },
+  { key: "grid", label: "Tech", hint: "Futuristic design" },
+  { key: "wallpaper", label: "Custom", hint: "A picture you upload" },
+  // Offered before the set above was named; still valid, so a company that
+  // picked one keeps it rather than being quietly moved.
   { key: "rays", label: "Rays", hint: "Accent glow with soft rays" },
   { key: "solid", label: "Solid", hint: "One flat colour, yours" },
-  { key: "wallpaper", label: "Wallpaper", hint: "A picture you upload" },
 ] as const;
+
+/** The nine the picker shows. The rest stay selectable only for whoever is
+ *  already on one. */
+export const OFFERED_THEMES = THEMES.slice(0, 9);
 
 /** How an uploaded wallpaper fills the screen. */
 export const WALLPAPER_FITS = [
@@ -368,7 +378,22 @@ export type Analytics = {
     views: number;
     clicks: number;
     saves: number;
+    photo_url: string | null;
+    change: { views: number | null; clicks: number | null; saves: number | null };
   }[];
+};
+
+/** A tint per event kind, for the rows that name them. */
+export const EVENT_TINTS: Record<string, string> = {
+  call: "#1aa260",
+  email: "#2f6ea8",
+  website: "#6b7280",
+  map: "#dc2626",
+  share: "#0a66c2",
+  save: "#15365c",
+  qr: "#111827",
+  signature: "#7c3aed",
+  view: "#2f6ea8",
 };
 
 /** The longest default sharing message the API will take. */

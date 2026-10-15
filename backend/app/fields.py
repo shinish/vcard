@@ -55,7 +55,22 @@ COMPANY_DETAILS = (
 
 # Background treatments for the public card. Pure CSS on the frontend, so a
 # template costs no image assets and scales to any screen.
-THEMES = ("plain", "ink", "gradient", "grid", "rays", "solid", "wallpaper")
+# The templates a company can dress its cards in. The first nine are what the
+# picker offers; `rays` and `solid` came first and stay valid so that nobody's
+# saved choice breaks, they are simply no longer offered.
+THEMES = (
+    "plain",       # Minimal
+    "corporate",
+    "ink",         # Executive
+    "gradient",
+    "glass",
+    "luxury",
+    "creative",
+    "grid",        # Tech
+    "wallpaper",   # Custom: your own picture
+    "rays",
+    "solid",
+)
 DEFAULT_THEME = "plain"
 
 # "wallpaper" needs an uploaded picture behind the card. How it fills the

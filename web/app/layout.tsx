@@ -3,8 +3,8 @@ import { Cairo, IBM_Plex_Sans, Inter, Lato, Nunito, Playfair_Display, Poppins } 
 
 import "./globals.css";
 
-// The brand site pairs Poppins headings with Nunito body copy; the rest are
-// the alternatives a company can pick for its own cards.
+// Inter dresses the admin. Poppins, Nunito and the rest are the type sets a
+// company can pick for its own cards.
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["500", "600", "700", "800"],
@@ -19,6 +19,8 @@ const nunito = Nunito({
   display: "swap",
 });
 
+// The interface font, left variable: one file carries every weight the admin
+// uses, from 400 in a table to 700 in a headline.
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 const playfair = Playfair_Display({

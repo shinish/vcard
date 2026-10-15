@@ -33,6 +33,7 @@ import {
   type LogoPosition,
   MAX_ACCENTS,
   MAX_SHARE_MESSAGE,
+  OFFERED_THEMES,
   THEMES,
   type ThemeKey,
   api,
@@ -296,11 +297,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
         </p>
       ) : null}
 
-      <div
-        className={`grid gap-6 ${
-          EDITS.includes(tab) ? "xl:grid-cols-[minmax(0,1fr)_22rem]" : ""
-        }`}
-      >
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0">
           <form id="company" onSubmit={save} hidden={!EDITS.includes(tab)}>
             {/* --- Company information ------------------------------------ */}
@@ -583,7 +580,10 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                   Background template
                 </legend>
                 <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {THEMES.map((t) => (
+                  {/* the nine on offer, plus whatever this company already wears */}
+                  {THEMES.filter(
+                    (t) => OFFERED_THEMES.some((o) => o.key === t.key) || t.key === theme,
+                  ).map((t) => (
                     <label
                       key={t.key}
                       className={`block cursor-pointer rounded-xl border p-2 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-cyan-deep ${
@@ -1026,7 +1026,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
         {/* --- Live preview ------------------------------------------------
             The real card in an iframe rather than a mock-up of one: there is
             only one renderer to keep honest. */}
-        <aside hidden={!EDITS.includes(tab)} className="surface h-fit p-4 xl:sticky xl:top-6">
+        <aside className="surface h-fit p-4 xl:sticky xl:top-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="font-display text-base font-bold">Live card preview</h2>
@@ -1092,9 +1092,40 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
               </div>
             </>
           ) : (
-            <p className="mt-4 rounded-xl border border-dashed border-line bg-wash p-6 text-center text-sm text-ink-soft">
-              Add a person to preview a real card.
-            </p>
+            <>
+              {/* Nobody here yet: the panel still shows what a card will look
+                  like, dressed in this company's template, colours and type. */}
+              <div
+                className={`mx-auto mt-4 overflow-hidden border-4 border-ink bg-paper ${
+                  wide ? "aspect-[4/3] w-full rounded-xl" : "aspect-[9/19] w-full max-w-[16rem] rounded-[2rem]"
+                }`}
+              >
+                <div
+                  className={`card-page tpl-${theme} type-${font} flex h-full flex-col items-center justify-center p-4`}
+                  style={paletteStyle(accents)}
+                >
+                  <div className="w-full max-w-[12rem] rounded-xl bg-paper p-3 text-center shadow-soft">
+                    {logoSrc ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- served by the API
+                      <img src={logoSrc} alt="" className="mx-auto mb-2 h-6 w-auto object-contain" />
+                    ) : null}
+                    <span className="mx-auto block size-12 rounded-full border border-line bg-wash" />
+                    <span className="mt-2 block font-display text-sm font-bold">Their name</span>
+                    <span className="block text-[11px] text-ink-soft">Job title</span>
+                    {switches.show_company_name ? (
+                      <span className="block text-[11px] text-ink-soft">{company?.name}</span>
+                    ) : null}
+                    <span className="accent-rule mx-auto mt-2 block h-1 w-10 rounded-full" />
+                    <span className="mt-3 block rounded-full bg-ink py-1.5 text-[11px] font-semibold text-white">
+                      Save contact
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-3 text-center text-xs text-ink-soft">
+                A sample in this company&rsquo;s look. Add a person and the real card shows here.
+              </p>
+            </>
           )}
         </aside>
       </div>

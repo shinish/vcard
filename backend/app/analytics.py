@@ -172,11 +172,24 @@ def window(
                 (start, stop, *narrow),
             )
         ]
+        # The same per-card counts for the window before, so each row can be
+        # shown against what it was doing last period.
+        before_cards = {
+            r["id"]: dict(r)
+            for r in conn.execute(
+                "SELECT c.id, "
+                "COUNT(*) FILTER (WHERE e.kind = 'view') AS views, "
+                "COUNT(*) FILTER (WHERE e.kind != 'view') AS clicks, "
+                "COUNT(*) FILTER (WHERE e.kind = 'save') AS saves "
+                f"{JOINED} WHERE e.at >= ? AND e.at < ?{scope} GROUP BY c.id",
+                (earlier, start, *narrow),
+            )
+        }
         busiest = [
             dict(r)
             for r in conn.execute(
                 "SELECT c.id, c.public_id, c.first_name, c.last_name, c.job_title, "
-                "co.name AS company, co.branch, "
+                "c.photo_path, co.name AS company, co.branch, "
                 "COUNT(*) FILTER (WHERE e.kind = 'view') AS views, "
                 "COUNT(*) FILTER (WHERE e.kind != 'view') AS clicks, "
                 "COUNT(*) FILTER (WHERE e.kind = 'save') AS saves "
@@ -205,6 +218,22 @@ def window(
             "clicks": rows.get(key, {}).get("clicks", 0),
         }
         for key in buckets(begin, finish, grain)
+    ]
+
+    # A face and the change per column, which is what the table shows.
+    busiest = [
+        {
+            # the stored filename is no business of the browser's; the URL is
+            **{k: v for k, v in row.items() if k != "photo_path"},
+            "photo_url": (
+                f"/api/public/{row['public_id']}/photo.jpg" if row["photo_path"] else None
+            ),
+            "change": {
+                key: _change(row[key], before_cards.get(row["id"], {}).get(key, 0))
+                for key in ("views", "clicks", "saves")
+            },
+        }
+        for row in busiest
     ]
 
     return {
