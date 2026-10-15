@@ -11,7 +11,7 @@ export type Action = { text: string; href?: string; onClick?: () => void };
 
 /** Shown after a record is created: what was made, and the link to hand over. */
 const PRIMARY =
-  "grad-cyan px-5 py-2.5 font-display text-sm font-semibold text-ink hover:opacity-90";
+  "grad-brand px-5 py-2.5 font-display text-sm font-semibold text-ink hover:opacity-90";
 const SECONDARY =
   "border border-ink px-5 py-2.5 font-display text-sm font-semibold hover:bg-ink hover:text-white";
 
@@ -50,7 +50,7 @@ export default function CreatedPanel({
   return (
     <section className="max-w-2xl border border-line bg-paper p-7">
       <div className="flex items-start gap-3">
-        <span aria-hidden="true" className="mt-1 block size-2.5 shrink-0 grad-cyan" />
+        <span aria-hidden="true" className="mt-1 block size-2.5 shrink-0 grad-brand" />
         <h1 className="font-display text-2xl font-bold">{heading}</h1>
       </div>
 

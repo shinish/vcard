@@ -141,7 +141,7 @@ export default function ContactPage({ params }: { params: Promise<{ id: string }
       <nav className="mb-4">
         <Link
           href={`/admin/companies/${contact.company_id}`}
-          className="text-sm font-semibold text-cyan-ink hover:underline"
+          className="text-sm font-semibold text-brand-ink hover:underline"
         >
           Back to the company
         </Link>
@@ -382,7 +382,7 @@ export default function ContactPage({ params }: { params: Promise<{ id: string }
           <ul className="mt-4 space-y-2">
             {COUNTERS.map((c) => (
               <li key={c.kind} className="flex items-center gap-3">
-                <span className="flex size-9 items-center justify-center rounded-full bg-wash text-cyan-ink">
+                <span className="flex size-9 items-center justify-center rounded-full bg-wash text-brand-ink">
                   <Icon name={c.icon} className="size-4" />
                 </span>
                 <span className="font-display text-xl font-bold">
@@ -404,7 +404,7 @@ export default function ContactPage({ params }: { params: Promise<{ id: string }
                     key={d.day}
                     title={`${d.day}: ${d.n}`}
                     style={{ height: `${Math.max(8, (d.n / peak) * 100)}%` }}
-                    className="grad-cyan w-2 rounded-t-sm"
+                    className="grad-brand w-2 rounded-t-sm"
                   />
                 ))}
               </ul>

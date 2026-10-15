@@ -55,7 +55,7 @@ function PhoneInput({
           setPendingDial(e.target.value);
           if (local) onChange(joinPhone(e.target.value, local));
         }}
-        className="w-36 shrink-0 border border-line bg-paper px-2 py-2.5 text-sm focus:border-cyan-deep focus:outline-none"
+        className="w-36 shrink-0 border border-line bg-paper px-2 py-2.5 text-sm focus:border-brand focus:outline-none"
       >
         {dial === "" ? <option value="">No code</option> : null}
         {DIAL_CODES.map((d) => (

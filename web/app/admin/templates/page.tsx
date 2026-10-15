@@ -39,7 +39,7 @@ export default function TemplatesPage() {
         <p className="mt-1 text-sm text-ink-soft">
           Every background a card can wear, with the companies using it. Pick one on a
           company&rsquo;s Card design tab; a new company starts on the default set in{" "}
-          <Link href="/admin/settings" className="font-semibold text-cyan-ink hover:underline">
+          <Link href="/admin/settings" className="font-semibold text-brand-ink hover:underline">
             Settings
           </Link>
           .
@@ -47,7 +47,7 @@ export default function TemplatesPage() {
       </header>
 
       {error ? (
-        <p role="alert" className="mb-5 rounded-lg border-l-2 border-cyan-deep bg-paper px-3 py-2 text-sm">
+        <p role="alert" className="mb-5 rounded-lg border-l-2 border-brand bg-paper px-3 py-2 text-sm">
           {error}
         </p>
       ) : null}

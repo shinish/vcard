@@ -93,7 +93,7 @@ export default function ChooseCompanyPage() {
       ) : null}
 
       {error ? (
-        <p role="alert" className="mb-5 rounded-lg border-l-2 border-cyan-deep bg-paper px-3 py-2 text-sm">
+        <p role="alert" className="mb-5 rounded-lg border-l-2 border-brand bg-paper px-3 py-2 text-sm">
           {error}
         </p>
       ) : null}
@@ -129,10 +129,10 @@ export default function ChooseCompanyPage() {
                   <Link
                     key={row.id}
                     href={`/admin/companies/${row.id}`}
-                    className="group border border-line bg-paper p-6 hover:border-cyan-deep"
+                    className="group border border-line bg-paper p-6 hover:border-brand"
                   >
                     <span className="grad-rule block h-1 w-8" />
-                    <h3 className="mt-4 font-display text-lg font-bold group-hover:text-cyan-ink">
+                    <h3 className="mt-4 font-display text-lg font-bold group-hover:text-brand-ink">
                       {row.branch || row.name}
                     </h3>
                     <p className="mt-1 text-sm text-ink-soft">

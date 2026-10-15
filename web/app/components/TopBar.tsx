@@ -66,7 +66,7 @@ export default function TopBar({ me, onSignOut }: { me: Me; onSignOut: () => voi
   const nothing = hits && hits.companies.length === 0 && hits.people.length === 0;
 
   return (
-    <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-line bg-paper/95 px-5 py-3 backdrop-blur sm:px-9">
+    <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-line bg-paper/90 px-5 py-3 backdrop-blur sm:px-9">
       <div className="relative min-w-0 flex-1 sm:max-w-xl">
         <span aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft">
           <Icon name="search" className="size-4" />
@@ -79,7 +79,7 @@ export default function TopBar({ me, onSignOut }: { me: Me; onSignOut: () => voi
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder="Search companies, people or card ids…"
           aria-label="Search"
-          className="field bg-wash pl-9 pr-16 text-sm"
+          className="field rounded-xl bg-wash pl-9 pr-16 text-sm"
         />
         <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-line bg-paper px-1.5 py-0.5 text-[10px] font-semibold text-ink-soft sm:block">
           ⌘K
@@ -137,7 +137,7 @@ export default function TopBar({ me, onSignOut }: { me: Me; onSignOut: () => voi
           aria-expanded={menu}
           className="flex items-center gap-2 rounded-full border border-line py-1 pl-1 pr-3 hover:border-ink"
         >
-          <span className="grad-cyan flex size-8 items-center justify-center rounded-full font-display text-xs font-bold">
+          <span className="grad-brand flex size-9 items-center justify-center rounded-full font-display text-xs font-bold">
             {(me.name || me.email).slice(0, 2).toUpperCase()}
           </span>
           <span className="hidden text-left text-xs leading-tight sm:block">

@@ -321,7 +321,7 @@ export default async function CardPage({
                         target="_blank"
                         rel="noreferrer"
                         title={`${row.label}: ${row.value}`}
-                        className="flex size-11 items-center justify-center rounded-full bg-ink text-white hover:bg-cyan-deep hover:text-ink"
+                        className="flex size-11 items-center justify-center rounded-full bg-ink text-white hover:bg-brand hover:text-ink"
                       >
                         <SocialMark name={mark} />
                         <span className="sr-only">{row.label}</span>
@@ -342,7 +342,7 @@ export default async function CardPage({
                 {details.map((row, i) => {
                   const inner = (
                     <>
-                      <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-wash text-cyan-ink">
+                      <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-wash text-brand-ink">
                         <Icon name={row.icon} className="size-4" />
                       </span>
                       <span className="min-w-0 flex-1">
@@ -356,7 +356,7 @@ export default async function CardPage({
                   return (
                     <li key={`${row.label}-${i}`}>
                       {row.href ? (
-                        <a href={row.href} className="flex items-start gap-3 py-3 hover:text-cyan-ink">
+                        <a href={row.href} className="flex items-start gap-3 py-3 hover:text-brand-ink">
                           {inner}
                         </a>
                       ) : (
@@ -400,7 +400,7 @@ export default async function CardPage({
                           href={item.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center gap-2 p-3 text-sm font-semibold text-cyan-ink"
+                          className="flex items-center gap-2 p-3 text-sm font-semibold text-brand-ink"
                         >
                           <Icon name="play" className="size-4" />
                           {item.caption ?? words.watch}
@@ -435,7 +435,7 @@ export default async function CardPage({
                   href={`https://www.openstreetmap.org/?mlat=${mapped.lat}&mlon=${mapped.lon}#map=17/${mapped.lat}/${mapped.lon}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="font-semibold text-cyan-ink underline"
+                  className="font-semibold text-brand-ink underline"
                 >
                   {words.openMap}
                 </a>

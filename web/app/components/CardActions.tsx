@@ -91,7 +91,7 @@ export default function CardActions({
             type="checkbox"
             checked={agreed}
             onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-0.5 size-4 shrink-0 accent-cyan-deep"
+            className="mt-0.5 size-4 shrink-0 accent-brand"
           />
           <span>{consentLabel}</span>
         </label>
@@ -137,9 +137,9 @@ export default function CardActions({
               key={a.kind}
               href={a.href}
               onClick={() => track(publicId, a.kind)}
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-wash py-3 text-[11px] font-semibold text-ink-soft hover:border-cyan-deep hover:text-ink"
+              className="flex flex-col items-center gap-1.5 rounded-xl border border-line bg-wash py-3 text-[11px] font-semibold text-ink-soft hover:border-brand hover:text-ink"
             >
-              <Icon name={a.icon} className="size-5 text-cyan-ink" />
+              <Icon name={a.icon} className="size-5 text-brand-ink" />
               {a.label}
             </a>
           ))}

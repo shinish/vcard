@@ -386,14 +386,14 @@ export type Analytics = {
 /** A tint per event kind, for the rows that name them. */
 export const EVENT_TINTS: Record<string, string> = {
   call: "#1aa260",
-  email: "#2f6ea8",
-  website: "#6b7280",
+  email: "#2f8ad6",
+  website: "#5b6b7f",
   map: "#dc2626",
   share: "#0a66c2",
   save: "#15365c",
-  qr: "#111827",
+  qr: "#0b1b2b",
   signature: "#7c3aed",
-  view: "#2f6ea8",
+  view: "#2f8ad6",
 };
 
 /** The longest default sharing message the API will take. */

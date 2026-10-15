@@ -123,7 +123,7 @@ export default function PortalLoginPage() {
                 setMode("code");
                 setError(null);
               }}
-              className="w-full text-sm font-semibold text-cyan-ink underline"
+              className="w-full text-sm font-semibold text-brand-ink underline"
             >
               First time here, or forgotten the password?
             </button>
@@ -187,7 +187,7 @@ export default function PortalLoginPage() {
                 setError(null);
                 setNote(null);
               }}
-              className="w-full text-sm font-semibold text-cyan-ink underline"
+              className="w-full text-sm font-semibold text-brand-ink underline"
             >
               Back to signing in
             </button>
@@ -196,7 +196,7 @@ export default function PortalLoginPage() {
 
         <p aria-live="polite" className="mt-4 min-h-5 text-sm">
           {error ? (
-            <span role="alert" className="confirm block rounded-lg border-l-2 border-cyan-deep bg-wash px-3 py-2">
+            <span role="alert" className="confirm block rounded-lg border-l-2 border-brand bg-wash px-3 py-2">
               {error}
             </span>
           ) : note ? (

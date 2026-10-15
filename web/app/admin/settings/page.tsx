@@ -130,7 +130,7 @@ export default function SettingsPage() {
 
   if (!data) {
     return error ? (
-      <p role="alert" className="rounded-lg border-l-2 border-cyan-deep bg-paper px-3 py-2 text-sm">
+      <p role="alert" className="rounded-lg border-l-2 border-brand bg-paper px-3 py-2 text-sm">
         {error}
       </p>
     ) : (
@@ -147,7 +147,7 @@ export default function SettingsPage() {
         <h1 className="font-display text-2xl font-bold">Settings</h1>
         <p className="mt-1 text-sm text-ink-soft">
           Applies to the whole app. For your own name and password, see{" "}
-          <Link href="/admin/profile" className="text-cyan-ink underline">
+          <Link href="/admin/profile" className="text-brand-ink underline">
             your profile
           </Link>
           .
@@ -359,7 +359,7 @@ export default function SettingsPage() {
                   type="checkbox"
                   checked={Boolean(notify[n.key])}
                   onChange={(e) => setNotify({ ...notify, [n.key]: e.target.checked })}
-                  className="size-4 accent-cyan-deep"
+                  className="size-4 accent-brand"
                 />
                 <span className="font-semibold">{n.label}</span>
               </label>
@@ -368,7 +368,7 @@ export default function SettingsPage() {
           <p className="mt-3 text-xs text-ink-soft">
             The monthly report goes out on the first, sent by the app itself — there is no cron
             job to install. Send the current one any time from{" "}
-            <Link href="/admin/analytics" className="font-semibold text-cyan-ink hover:underline">
+            <Link href="/admin/analytics" className="font-semibold text-brand-ink hover:underline">
               Analytics
             </Link>
             .
@@ -415,7 +415,7 @@ export default function SettingsPage() {
         </section>
 
         {error ? (
-          <p role="alert" className="rounded-lg border-l-2 border-cyan-deep bg-paper px-3 py-2 text-sm">
+          <p role="alert" className="rounded-lg border-l-2 border-brand bg-paper px-3 py-2 text-sm">
             {error}
           </p>
         ) : null}

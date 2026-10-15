@@ -143,7 +143,7 @@ export default function LoginPage() {
             <p className="mt-3 font-display text-[1.65rem] font-bold leading-none text-[#15365c]">
               True Star
             </p>
-            <p className="mt-1.5 font-display text-sm font-semibold text-cyan-ink">
+            <p className="mt-1.5 font-display text-sm font-semibold text-brand-ink">
               Contact cards
             </p>
           </div>
@@ -191,7 +191,7 @@ export default function LoginPage() {
               </label>
 
               {error ? (
-                <p role="alert" className="confirm rounded-lg border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+                <p role="alert" className="confirm rounded-lg border-l-2 border-brand bg-wash px-3 py-2 text-sm">
                   {error}
                 </p>
               ) : null}
@@ -219,7 +219,7 @@ export default function LoginPage() {
                 />
               </label>
               {error ? (
-                <p role="alert" className="confirm rounded-lg border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+                <p role="alert" className="confirm rounded-lg border-l-2 border-brand bg-wash px-3 py-2 text-sm">
                   {error}
                 </p>
               ) : null}
@@ -233,7 +233,7 @@ export default function LoginPage() {
                   setError(null);
                   setNote(null);
                 }}
-                className="w-full text-center text-sm font-semibold text-cyan-ink hover:underline"
+                className="w-full text-center text-sm font-semibold text-brand-ink hover:underline"
               >
                 Back to sign in
               </button>
@@ -278,7 +278,7 @@ export default function LoginPage() {
                 />
               </label>
               {error ? (
-                <p role="alert" className="confirm rounded-lg border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+                <p role="alert" className="confirm rounded-lg border-l-2 border-brand bg-wash px-3 py-2 text-sm">
                   {error}
                 </p>
               ) : null}
@@ -292,7 +292,7 @@ export default function LoginPage() {
                   setError(null);
                   setNote(null);
                 }}
-                className="w-full text-center text-sm font-semibold text-cyan-ink hover:underline"
+                className="w-full text-center text-sm font-semibold text-brand-ink hover:underline"
               >
                 Back to sign in
               </button>
@@ -332,7 +332,7 @@ export default function LoginPage() {
                       setError(null);
                       setNote(null);
                     }}
-                    className="text-xs font-semibold text-cyan-ink hover:underline"
+                    className="text-xs font-semibold text-brand-ink hover:underline"
                   >
                     Forgot password?
                   </button>
@@ -365,7 +365,7 @@ export default function LoginPage() {
               </div>
 
               {error ? (
-                <p role="alert" className="confirm rounded-lg border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+                <p role="alert" className="confirm rounded-lg border-l-2 border-brand bg-wash px-3 py-2 text-sm">
                   {error}
                 </p>
               ) : null}

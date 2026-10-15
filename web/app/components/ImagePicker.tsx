@@ -106,7 +106,7 @@ export default function ImagePicker({
           }}
           aria-label={shown ? `Replace ${label.toLowerCase()}` : `Add ${label.toLowerCase()}`}
           className={`flex size-32 shrink-0 flex-col items-center justify-center gap-1.5 border border-dashed bg-wash p-2 ${
-            dragging ? "border-cyan-deep bg-shell" : "border-line hover:border-cyan-deep"
+            dragging ? "border-brand bg-shell" : "border-line hover:border-brand"
           }`}
         >
           {shown ? (
@@ -120,7 +120,7 @@ export default function ImagePicker({
             />
           ) : (
             <>
-              <span className="grad-cyan flex size-9 items-center justify-center font-display text-xl leading-none">
+              <span className="grad-brand flex size-9 items-center justify-center font-display text-xl leading-none">
                 +
               </span>
               <span className="font-display text-xs font-semibold">Add</span>
@@ -204,7 +204,7 @@ export default function ImagePicker({
           </div>
 
           {error ? (
-            <p role="alert" className="rounded-lg border-l-2 border-cyan-deep bg-paper px-3 py-2 text-sm">
+            <p role="alert" className="rounded-lg border-l-2 border-brand bg-paper px-3 py-2 text-sm">
               {error}
             </p>
           ) : null}

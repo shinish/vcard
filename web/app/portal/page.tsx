@@ -219,7 +219,7 @@ export default function PortalPage() {
                   <ul className="mt-4 grid gap-3 sm:grid-cols-2">
                     {COUNTERS.map((c) => (
                       <li key={c.key} className="flex items-center gap-3">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-wash text-cyan-ink">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-wash text-brand-ink">
                           <Icon name={c.icon} className="size-4" />
                         </span>
                         <span>
@@ -317,7 +317,7 @@ export default function PortalPage() {
 
             <p aria-live="polite" className="min-h-5 text-sm">
               {error ? (
-                <span role="alert" className="confirm block rounded-lg border-l-2 border-cyan-deep bg-paper px-3 py-2">
+                <span role="alert" className="confirm block rounded-lg border-l-2 border-brand bg-paper px-3 py-2">
                   {error}
                 </span>
               ) : note ? (

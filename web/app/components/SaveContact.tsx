@@ -23,7 +23,7 @@ export default function SaveContact({
         href={href}
         download
         onClick={() => setSaved(true)}
-        className="block bg-ink px-6 py-4 text-center font-display font-semibold text-white hover:bg-cyan-deep hover:text-ink"
+        className="block bg-ink px-6 py-4 text-center font-display font-semibold text-white hover:bg-brand hover:text-ink"
       >
         {saveLabel}
       </a>

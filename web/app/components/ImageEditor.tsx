@@ -408,7 +408,7 @@ export default function ImageEditor({
             step={0.01}
             value={zoom}
             onChange={(e) => setZoom(Number(e.target.value))}
-            className="min-w-24 flex-1 accent-cyan-deep"
+            className="min-w-24 flex-1 accent-brand"
             aria-label="Zoom"
           />
           <button
@@ -473,7 +473,7 @@ export default function ImageEditor({
             step={1}
             value={rotation}
             onChange={(e) => setRotation(Number(e.target.value))}
-            className="w-full accent-cyan-deep"
+            className="w-full accent-brand"
             aria-label="Rotate"
           />
         </label>
@@ -489,7 +489,7 @@ export default function ImageEditor({
                   type="button"
                   onClick={() => setRatio(r.value)}
                   className={`rounded-full border px-3 py-1 text-sm font-semibold ${
-                    on ? "grad-cyan border-cyan-deep" : "border-line hover:border-ink"
+                    on ? "grad-brand border-brand" : "border-line hover:border-ink"
                   }`}
                 >
                   {r.label}
@@ -519,7 +519,7 @@ export default function ImageEditor({
                   type="button"
                   onClick={() => setAdjust(preset.values)}
                   className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${
-                    on ? "grad-cyan border-cyan-deep" : "border-line hover:border-ink"
+                    on ? "grad-brand border-brand" : "border-line hover:border-ink"
                   }`}
                 >
                   {preset.label}
@@ -541,7 +541,7 @@ export default function ImageEditor({
                 step={1}
                 value={adjust[a.key]}
                 onChange={(e) => setAdjust({ ...adjust, [a.key]: Number(e.target.value) })}
-                className="min-w-0 flex-1 accent-cyan-deep"
+                className="min-w-0 flex-1 accent-brand"
               />
               <span className="w-10 shrink-0 text-right font-mono text-xs">{adjust[a.key]}</span>
             </label>
@@ -563,7 +563,7 @@ export default function ImageEditor({
                   type="button"
                   onClick={() => setBackground(b.key)}
                   className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${
-                    on ? "grad-cyan border-cyan-deep" : "border-line hover:border-ink"
+                    on ? "grad-brand border-brand" : "border-line hover:border-ink"
                   }`}
                 >
                   {b.label}
@@ -653,7 +653,7 @@ export default function ImageEditor({
         <div className="mt-4 rounded-xl border border-line p-3">
           <p className="text-xs font-semibold text-ink-soft">On a card</p>
           <div className="mt-2 overflow-hidden rounded-lg border border-line bg-paper">
-            <div className="grad-cyan flex h-9 items-center justify-center">
+            <div className="grad-brand flex h-9 items-center justify-center">
               {!round && preview ? (
                 // eslint-disable-next-line @next/next/no-img-element -- a blob url
                 <img src={preview} alt="" className="max-h-7 max-w-[70%] object-contain" />
@@ -677,7 +677,7 @@ export default function ImageEditor({
         </div>
 
         {error ? (
-          <p role="alert" className="mt-3 rounded-lg border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+          <p role="alert" className="mt-3 rounded-lg border-l-2 border-brand bg-wash px-3 py-2 text-sm">
             {error}
           </p>
         ) : null}

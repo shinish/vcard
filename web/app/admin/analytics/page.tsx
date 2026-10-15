@@ -156,7 +156,7 @@ export default function AnalyticsPage() {
             </span>
             <Link
               href={`/admin/companies/${company.id}`}
-              className="truncate font-semibold text-cyan-ink hover:underline"
+              className="truncate font-semibold text-brand-ink hover:underline"
             >
               {companyLabel(company)}
             </Link>
@@ -187,8 +187,8 @@ export default function AnalyticsPage() {
             </h1>
             {company ? (
               <span
-                className={`chip ${
-                  company.public_sharing ? "bg-cyan/20 text-cyan-ink" : "bg-wash text-ink-soft"
+                className={`${
+                  company.public_sharing ? "badge-live" : "badge-off"
                 }`}
               >
                 {company.public_sharing ? "Shared" : "Not shared"}
@@ -300,12 +300,12 @@ export default function AnalyticsPage() {
       </header>
 
       {error ? (
-        <p role="alert" className="mb-5 rounded-lg border-l-2 border-cyan-deep bg-paper px-3 py-2 text-sm">
+        <p role="alert" className="mb-5 rounded-lg border-l-2 border-brand bg-paper px-3 py-2 text-sm">
           {error}
         </p>
       ) : null}
       {mailed ? (
-        <p aria-live="polite" className="confirm mb-5 rounded-lg border-l-2 border-cyan-deep bg-paper px-3 py-2 text-sm">
+        <p aria-live="polite" className="confirm mb-5 rounded-lg border-l-2 border-brand bg-paper px-3 py-2 text-sm">
           {mailed}
         </p>
       ) : null}
@@ -383,7 +383,7 @@ export default function AnalyticsPage() {
                   <button
                     type="button"
                     onClick={() => setAllCards((v) => !v)}
-                    className="text-sm font-semibold text-cyan-ink hover:underline"
+                    className="text-sm font-semibold text-brand-ink hover:underline"
                   >
                     {allCards ? "Show top five" : "View all"}
                   </button>
@@ -423,7 +423,7 @@ export default function AnalyticsPage() {
                             <span className="min-w-0">
                               <Link
                                 href={`/admin/contacts/${row.id}`}
-                                className="block truncate font-semibold text-cyan-ink hover:underline"
+                                className="block truncate font-semibold text-brand-ink hover:underline"
                               >
                                 {[row.first_name, row.last_name].filter(Boolean).join(" ")}
                               </Link>
@@ -457,8 +457,8 @@ export default function AnalyticsPage() {
                     {data.actions.map((a) => (
                       <li key={a.kind} className="flex items-center gap-3 py-2.5 text-sm">
                         <span
-                          className="flex size-8 shrink-0 items-center justify-center rounded-lg text-white"
-                          style={{ background: EVENT_TINTS[a.kind] ?? "#5a686c" }}
+                          className="flex size-9 shrink-0 items-center justify-center rounded-xl text-white"
+                          style={{ background: EVENT_TINTS[a.kind] ?? "#5b6b7f" }}
                         >
                           <Icon name={iconFor(a.kind)} className="size-4" />
                         </span>
@@ -488,7 +488,7 @@ export default function AnalyticsPage() {
                     <button
                       type="button"
                       onClick={() => setAllSources((v) => !v)}
-                      className="text-sm font-semibold text-cyan-ink hover:underline"
+                      className="text-sm font-semibold text-brand-ink hover:underline"
                     >
                       {allSources ? "Show top five" : "View all"}
                     </button>
@@ -502,7 +502,7 @@ export default function AnalyticsPage() {
                       const mark = socialOf(s.source, s.source);
                       return (
                         <li key={s.source} className="flex items-center gap-3 py-2.5 text-sm">
-                          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-wash text-cyan-ink">
+                          <span className="tile-icon size-9 shrink-0">
                             {mark ? (
                               <SocialMark name={mark} className="size-4" />
                             ) : (
@@ -576,7 +576,7 @@ function Tile({
 }) {
   return (
     <div className="surface p-4">
-      <span className="flex size-10 items-center justify-center rounded-xl bg-wash text-cyan-ink">
+      <span className="tile-icon size-10">
         <Icon name={icon} className="size-5" />
       </span>
       <p className="mt-3 text-sm text-ink-soft">{label}</p>
@@ -597,7 +597,8 @@ function Tile({
  *  no path arithmetic to get wrong. */
 function Donut({ slices, total }: { slices: { label: string; value: number }[]; total: number }) {
   const sum = slices.reduce((n, s) => n + s.value, 0) || 1;
-  const tints = ["#0b6670", "#28b4be", "#8fd9df", "#cfeef0"];
+  // One hue, light to dark: a share of a whole is magnitude, not identity.
+  const tints = ["#15365c", "#2f8ad6", "#7cb6e8", "#c3dcf5"];
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
   let walked = 0;

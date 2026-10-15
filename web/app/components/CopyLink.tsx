@@ -57,7 +57,7 @@ export default function CopyLink({ value, label }: { value: string; label?: stri
         <button
           type="button"
           onClick={copy}
-          className="shrink-0 bg-ink px-4 py-2.5 font-display text-sm font-semibold text-white hover:bg-cyan-deep hover:text-ink"
+          className="shrink-0 bg-ink px-4 py-2.5 font-display text-sm font-semibold text-white hover:bg-brand hover:text-ink"
         >
           {state === "copied" ? "Copied" : "Copy"}
         </button>

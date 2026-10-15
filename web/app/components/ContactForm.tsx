@@ -371,7 +371,7 @@ export default function ContactForm({
       </section>
 
       {error ? (
-        <p role="alert" className="rounded-lg border-l-2 border-cyan-deep bg-paper px-3 py-2 text-sm">
+        <p role="alert" className="rounded-lg border-l-2 border-brand bg-paper px-3 py-2 text-sm">
           {error}
         </p>
       ) : null}

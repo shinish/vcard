@@ -80,7 +80,7 @@ export default function HelpPage() {
               <button
                 onClick={() => setOpen(open === i ? null : i)}
                 aria-expanded={open === i}
-                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-display font-semibold hover:text-cyan-ink"
+                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-display font-semibold hover:text-brand-ink"
               >
                 {section.q}
                 <span aria-hidden="true" className="shrink-0 text-ink-soft">
@@ -100,7 +100,7 @@ export default function HelpPage() {
       </div>
 
       <p className="mt-6 max-w-2xl text-sm text-ink-soft">
-        Still stuck? Start from <Link href="/admin/companies" className="text-cyan-ink underline">Companies</Link>{" "}
+        Still stuck? Start from <Link href="/admin/companies" className="text-brand-ink underline">Companies</Link>{" "}
         — nearly everything hangs off a company.
       </p>
     </>

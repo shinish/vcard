@@ -47,7 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-dvh flex-col sm:flex-row">
-      <aside className="grad-shell flex shrink-0 flex-col px-5 py-4 sm:w-64 sm:py-6">
+      <aside className="grad-shell flex shrink-0 flex-col px-4 py-4 sm:w-[16.5rem] sm:py-6">
         <Link href="/admin" className="flex items-center gap-3">
           <Image src="/tbs-logo.png" alt="" width={34} height={32} />
           <span className="font-display text-sm font-bold leading-tight text-white">
@@ -56,7 +56,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </span>
         </Link>
 
-        <nav className="mt-4 flex flex-wrap gap-1 sm:mt-8 sm:flex-col">
+        <nav className="mt-4 flex flex-wrap gap-1.5 sm:mt-8 sm:flex-col">
           {nav.map((item) => {
             // /admin is the dashboard itself, so it only lights on an exact match
             const active =
@@ -66,8 +66,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-2.5 rounded-full px-3.5 py-2 font-display text-sm font-semibold transition-colors ${
-                  active ? "grad-cyan" : "text-white/70 hover:bg-white/10 hover:text-white"
+                className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-display text-sm font-semibold transition-colors ${
+                  active
+                    ? "grad-brand shadow-[0_10px_20px_-14px_#2f8ad6]"
+                    : "text-white/65 hover:bg-white/[0.07] hover:text-white"
                 }`}
               >
                 <Icon name={item.icon} className="size-4" />

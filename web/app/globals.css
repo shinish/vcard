@@ -1,20 +1,26 @@
 @import "tailwindcss";
 
-/* Cyan and black. The cyan pair is lifted from the brand site's own gradient,
-   rgb(60,207,215) -> rgb(40,180,190), so it matches rather than approximates. */
+/* Navy, blue and the logo's gold — the palette of the supplied designs.
+   Blue carries every action, navy carries weight, gold appears only where the
+   mark itself does. Cyan survives in one place: the wordmark's second line. */
 @theme {
-  --color-ink: #0d1315;
-  --color-ink-soft: #5a686c;
+  --color-ink: #0b1b2b;
+  --color-ink-soft: #5b6b7f;
   --color-paper: #ffffff;
-  --color-wash: #eef4f5;
-  --color-line: #e0e8ea;
-  --color-shell: #06100f;
+  --color-wash: #f4f7fa;
+  --color-line: #e3eaf2;
+  --color-shell: #0a1420;
 
-  --color-cyan: #3ccfd7;
-  --color-cyan-deep: #28b4be;
-  /* Bright cyan on white is about 1.9:1, far too low for text. This darker
-     step is for anything that has to be read. */
-  --color-cyan-ink: #0b6670;
+  --color-cyan: #35c7e8;
+  /* The action blue, the navy under it, and a step dark enough to read as
+     text on white (#2f8ad6 is 3.1:1 — fine for a mark, not for a sentence). */
+  --color-brand: #1d6fb8;
+  --color-brand-deep: #15365c;
+  --color-brand-ink: #15508f;
+  --color-brand-wash: #eaf2fe;
+  --color-gold: #f4a01c;
+  --color-good: #1aa260;
+  --color-bad: #c2410c;
 
   /* The admin wears Inter, which is what the designs are set in: a neutral
      grotesque that holds up at 11px in a table and at 44px in a headline.
@@ -23,9 +29,9 @@
   --font-display: var(--font-inter), system-ui, sans-serif;
   --font-sans: var(--font-inter), system-ui, sans-serif;
 
-  --radius-card: 1rem;
-  --shadow-soft: 0 1px 2px rgb(13 19 21 / 0.04), 0 8px 24px -12px rgb(13 19 21 / 0.18);
-  --shadow-lift: 0 2px 6px rgb(13 19 21 / 0.06), 0 24px 48px -24px rgb(13 19 21 / 0.35);
+  --radius-card: 0.875rem;
+  --shadow-soft: 0 1px 2px rgb(11 27 43 / 0.04), 0 10px 30px -18px rgb(11 27 43 / 0.22);
+  --shadow-lift: 0 2px 6px rgb(11 27 43 / 0.06), 0 26px 50px -24px rgb(11 27 43 / 0.4);
 }
 
 html {
@@ -75,22 +81,23 @@ h3,
   --font-sans: var(--font-cairo), system-ui, sans-serif;
 }
 
-.grad-cyan {
-  background-image: linear-gradient(135deg, var(--color-cyan), var(--color-cyan-deep));
-  color: var(--color-ink);
+/* The one filled treatment: an action, or the nav item you are on. */
+.grad-brand {
+  background-image: linear-gradient(135deg, #2f8ad6, var(--color-brand));
+  color: #ffffff;
 }
 
 .grad-shell {
-  background-image: linear-gradient(185deg, #000000 0%, #081214 55%, #0a1518 100%);
+  background-image: linear-gradient(195deg, #0d1c2d 0%, #0a1420 55%, #081220 100%);
 }
 
 /* A hairline that carries the gradient rather than a flat accent colour. */
 .grad-rule {
-  background-image: linear-gradient(90deg, var(--color-cyan), var(--color-cyan-deep));
+  background-image: linear-gradient(90deg, var(--color-brand), #2f8ad6);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-cyan-deep);
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
 
@@ -135,7 +142,7 @@ h3,
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 999px;
+    border-radius: 0.7rem;
     border: 1px solid var(--color-line);
     background: var(--color-paper);
     padding: 0.55rem 1.1rem;
@@ -145,14 +152,18 @@ h3,
     transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
   }
   .btn:hover {
-    border-color: var(--color-ink);
+    border-color: var(--color-brand);
+    color: var(--color-brand-ink);
   }
 
   .btn-primary {
     border-color: transparent;
-    background-image: linear-gradient(135deg, var(--color-cyan), var(--color-cyan-deep));
-    color: var(--color-ink);
-    box-shadow: 0 10px 20px -12px var(--color-cyan-deep);
+    background-image: linear-gradient(135deg, #2f8ad6, var(--color-brand));
+    color: #ffffff;
+    box-shadow: 0 12px 22px -14px var(--color-brand-deep);
+  }
+  .btn-primary:hover {
+    color: #ffffff;
   }
   .btn-primary:hover {
     filter: brightness(1.04);
@@ -161,12 +172,13 @@ h3,
 
   .btn-dark {
     border-color: transparent;
-    background: var(--color-ink);
+    background: var(--color-brand-deep);
     color: #fff;
   }
   .btn-dark:hover {
     border-color: transparent;
-    background: #000;
+    background: #0e2743;
+    color: #fff;
   }
 
   .btn:disabled {
@@ -182,8 +194,8 @@ h3,
   }
   .field:focus {
     outline: none;
-    border-color: var(--color-cyan-deep);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-cyan) 28%, transparent);
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 22%, transparent);
   }
 
   .chip {
@@ -197,6 +209,40 @@ h3,
     font-weight: 600;
     color: var(--color-ink-soft);
   }
+
+  /* A state, not a decoration: green for live, grey for not. */
+  .badge-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    background: #e7f7ee;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #137a42;
+  }
+  .badge-off {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    background: var(--color-wash);
+    padding: 0.2rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-ink-soft);
+  }
+
+  /* The square behind a tile's glyph, as in the designs. */
+  .tile-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.7rem;
+    background: var(--color-brand-wash);
+    color: var(--color-brand);
+  }
 }
 
 /* --- Background templates for the public card -------------------------
@@ -204,8 +250,8 @@ h3,
    contact details stay on a readable surface whichever template is picked.
    --accent is set inline per company and defaults to the house cyan. */
 .card-page {
-  --accent: var(--color-cyan-deep);
-  --accent-2: #071012;
+  --accent: var(--color-brand);
+  --accent-2: #0a1420;
   --accent-3: var(--accent);
 }
 

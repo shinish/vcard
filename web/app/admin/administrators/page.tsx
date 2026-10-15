@@ -80,7 +80,7 @@ export default function UsersPage() {
         links={[{ label: "Sign-in link", value: `${origin}/login` }]}
         primary={{ text: "Done", onClick: () => setMade(null) }}
       >
-        <p className="mt-6 border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+        <p className="mt-6 border-l-2 border-brand bg-wash px-3 py-2 text-sm">
           Send the password over a channel the person already trusts, and ask them to change
           it. This screen is the only place it is shown.
         </p>
@@ -127,7 +127,7 @@ export default function UsersPage() {
                   minLength={10}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="min-w-0 flex-1 border border-line px-3 py-2.5 font-mono text-sm focus:border-cyan-deep focus:outline-none"
+                  className="min-w-0 flex-1 border border-line px-3 py-2.5 font-mono text-sm focus:border-brand focus:outline-none"
                 />
                 <button
                   type="button"
@@ -141,7 +141,7 @@ export default function UsersPage() {
           </div>
 
           {error ? (
-            <p role="alert" className="mt-4 border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+            <p role="alert" className="mt-4 border-l-2 border-brand bg-wash px-3 py-2 text-sm">
               {error}
             </p>
           ) : null}
@@ -264,7 +264,7 @@ export default function UsersPage() {
                   </div>
                   <button
                     type="submit"
-                    className="mt-4 grad-cyan px-4 py-2 font-display text-sm font-semibold hover:opacity-90"
+                    className="mt-4 grad-brand px-4 py-2 font-display text-sm font-semibold hover:opacity-90"
                   >
                     Save details
                   </button>
@@ -356,7 +356,7 @@ export default function UsersPage() {
                     />
                     <button
                       type="submit"
-                      className="grad-cyan px-4 py-2.5 font-display text-sm font-semibold hover:opacity-90"
+                      className="grad-brand px-4 py-2.5 font-display text-sm font-semibold hover:opacity-90"
                     >
                       Set password
                     </button>

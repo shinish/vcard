@@ -18,7 +18,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <p role="alert" className="rounded-lg border-l-2 border-cyan-deep bg-paper px-3 py-2 text-sm">
+      <p role="alert" className="rounded-lg border-l-2 border-brand bg-paper px-3 py-2 text-sm">
         {error}
       </p>
     );
@@ -43,7 +43,7 @@ export default function DashboardPage() {
           { label: "Administrators", value: data.totals.admins, icon: "user" as const },
         ].map((t) => (
           <div key={t.label} className="surface p-5">
-            <span className="flex size-9 items-center justify-center rounded-full bg-wash text-cyan-ink">
+            <span className="flex size-9 items-center justify-center rounded-full bg-wash text-brand-ink">
               <Icon name={t.icon} className="size-4" />
             </span>
             <p className="mt-3 font-display text-3xl font-bold">{t.value}</p>
@@ -62,14 +62,14 @@ export default function DashboardPage() {
               <li key={c.id}>
                 <Link
                   href={`/admin/companies/${c.id}`}
-                  className="group flex items-center gap-4 hover:text-cyan-ink"
+                  className="group flex items-center gap-4 hover:text-brand-ink"
                 >
                   <span className="w-48 shrink-0 truncate text-sm font-semibold">
                     {companyLabel(c)}
                   </span>
                   <span className="flex h-3 min-w-0 flex-1 bg-wash">
                     <span
-                      className="grad-cyan block h-3"
+                      className="grad-brand block h-3"
                       style={{ width: `${Math.round((c.contact_count / busiest) * 100)}%` }}
                     />
                   </span>

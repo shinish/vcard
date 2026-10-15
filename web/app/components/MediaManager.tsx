@@ -84,7 +84,7 @@ export default function MediaManager({
       </div>
 
       {error ? (
-        <p role="alert" className="mt-4 rounded-lg border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+        <p role="alert" className="mt-4 rounded-lg border-l-2 border-brand bg-wash px-3 py-2 text-sm">
           {error}
         </p>
       ) : null}
@@ -160,7 +160,7 @@ export default function MediaManager({
                       href={item.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="block truncate text-cyan-ink underline"
+                      className="block truncate text-brand-ink underline"
                     >
                       {item.url.replace(/^https?:\/\//, "")}
                     </a>

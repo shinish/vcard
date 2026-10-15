@@ -122,7 +122,7 @@ export default function ProfilePage() {
           </label>
         </div>
         {detailsErr ? (
-          <p role="alert" className="mt-4 border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+          <p role="alert" className="mt-4 border-l-2 border-brand bg-wash px-3 py-2 text-sm">
             {detailsErr}
           </p>
         ) : null}
@@ -178,7 +178,7 @@ export default function ProfilePage() {
           </div>
         </div>
         {pwErr ? (
-          <p role="alert" className="mt-4 border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+          <p role="alert" className="mt-4 border-l-2 border-brand bg-wash px-3 py-2 text-sm">
             {pwErr}
           </p>
         ) : null}
@@ -200,7 +200,7 @@ export default function ProfilePage() {
         </p>
 
         {twoErr ? (
-          <p role="alert" className="mt-4 border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+          <p role="alert" className="mt-4 border-l-2 border-brand bg-wash px-3 py-2 text-sm">
             {twoErr}
           </p>
         ) : null}
@@ -237,7 +237,7 @@ export default function ProfilePage() {
         ) : twoStep.enabled ? (
           <>
             <p className="mt-4 flex items-center gap-2 text-sm font-semibold">
-              <Icon name="check" className="size-4 text-cyan-ink" />
+              <Icon name="check" className="size-4 text-brand-ink" />
               On — {twoStep.recovery_left} recovery{" "}
               {twoStep.recovery_left === 1 ? "code" : "codes"} left
             </p>

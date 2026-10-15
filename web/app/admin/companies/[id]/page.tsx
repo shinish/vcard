@@ -190,7 +190,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
   return (
     <>
       <nav className="mb-4 flex items-center gap-2 text-sm">
-        <Link href="/admin/companies" className="font-semibold text-cyan-ink hover:underline">
+        <Link href="/admin/companies" className="font-semibold text-brand-ink hover:underline">
           Companies
         </Link>
         <span aria-hidden="true" className="text-ink-soft">
@@ -214,11 +214,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
             <h1 className="font-display text-2xl font-bold">{company?.name ?? "Company"}</h1>
             {company?.branch ? <span className="chip">{company.branch}</span> : null}
             {company ? (
-              <span
-                className={`chip ${
-                  switches.public_sharing ? "bg-cyan/20 text-cyan-ink" : "bg-wash text-ink-soft"
-                }`}
-              >
+              <span className={switches.public_sharing ? "badge-live" : "badge-off"}>
                 {switches.public_sharing ? "Shared" : "Not shared"}
               </span>
             ) : null}
@@ -277,7 +273,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
             onClick={() => setTab(t.key)}
             aria-current={tab === t.key ? "true" : undefined}
             className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2 font-display text-sm font-semibold transition-colors ${
-              tab === t.key ? "grad-cyan" : "text-ink-soft hover:bg-wash hover:text-ink"
+              tab === t.key ? "grad-brand" : "text-ink-soft hover:bg-wash hover:text-ink"
             }`}
           >
             <Icon name={t.icon} className="size-4" />
@@ -287,12 +283,12 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
       </div>
 
       {error ? (
-        <p role="alert" className="mb-5 rounded-lg border-l-2 border-cyan-deep bg-paper px-3 py-2 text-sm">
+        <p role="alert" className="mb-5 rounded-lg border-l-2 border-brand bg-paper px-3 py-2 text-sm">
           {error}
         </p>
       ) : null}
       {saved ? (
-        <p aria-live="polite" className="confirm mb-5 rounded-lg border-l-2 border-cyan-deep bg-paper px-3 py-2 text-sm">
+        <p aria-live="polite" className="confirm mb-5 rounded-lg border-l-2 border-brand bg-paper px-3 py-2 text-sm">
           Saved.
         </p>
       ) : null}
@@ -361,6 +357,9 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                     <span className="text-sm text-ink-soft">{DETAIL_LABELS.country}</span>
                     <select
                       name="country"
+                      // a select applies defaultValue at mount only, and the
+                      // company arrives after: remount it when the value does
+                      key={`country-${company?.country ?? ""}`}
                       defaultValue={company?.country ?? ""}
                       className="field bg-paper"
                     >
@@ -425,8 +424,8 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                         <label
                           key={slot}
                           title={slot.replace("-", " ")}
-                          className={`${LOGO_PLACEMENT[slot]} block size-8 cursor-pointer border has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-cyan-deep ${
-                            logoAt === slot ? "grad-cyan border-cyan-deep" : "border-line hover:border-ink"
+                          className={`${LOGO_PLACEMENT[slot]} block size-8 cursor-pointer border has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-brand ${
+                            logoAt === slot ? "grad-brand border-brand" : "border-line hover:border-ink"
                           }`}
                         >
                           <input
@@ -458,7 +457,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                       step={10}
                       value={logoScale}
                       onChange={(e) => setLogoScale(Number(e.target.value))}
-                      className="w-full accent-cyan-deep"
+                      className="w-full accent-brand"
                     />
                     <span className="block text-xs text-ink-soft">
                       Applies on the card and inside the QR code, where it is capped so the code
@@ -586,8 +585,8 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                   ).map((t) => (
                     <label
                       key={t.key}
-                      className={`block cursor-pointer rounded-xl border p-2 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-cyan-deep ${
-                        theme === t.key ? "border-cyan-deep" : "border-line hover:border-ink"
+                      className={`block cursor-pointer rounded-xl border p-2 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand ${
+                        theme === t.key ? "border-brand" : "border-line hover:border-ink"
                       }`}
                     >
                       <input
@@ -642,7 +641,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                           key={f.key}
                           className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm font-semibold ${
                             fit === f.key
-                              ? "grad-cyan border-cyan-deep"
+                              ? "grad-brand border-brand"
                               : "border-line bg-paper hover:border-ink"
                           }`}
                         >
@@ -751,7 +750,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                           <a
                             href={`/api/public/${row.public_id}/qr.png`}
                             download
-                            className="text-sm font-semibold text-cyan-ink underline hover:text-ink"
+                            className="text-sm font-semibold text-brand-ink underline hover:text-ink"
                           >
                             Download QR code (PNG)
                           </a>
@@ -759,7 +758,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                             href={`/api/public/${row.public_id}/signature.html`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-sm font-semibold text-cyan-ink underline hover:text-ink"
+                            className="text-sm font-semibold text-brand-ink underline hover:text-ink"
                           >
                             Outlook signature
                           </a>
@@ -830,7 +829,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                           <button
                             type="button"
                             onClick={() => setTab(row.tab)}
-                            className="text-xs font-semibold text-cyan-ink underline hover:text-ink"
+                            className="text-xs font-semibold text-brand-ink underline hover:text-ink"
                           >
                             edit
                           </button>
@@ -998,7 +997,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                   </label>
 
                   {deleteError ? (
-                    <p role="alert" className="mt-3 border-l-2 border-cyan-deep bg-wash px-3 py-2 text-sm">
+                    <p role="alert" className="mt-3 border-l-2 border-brand bg-wash px-3 py-2 text-sm">
                       {deleteError}
                     </p>
                   ) : null}
@@ -1042,7 +1041,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                   type="button"
                   onClick={() => setWide(o.key)}
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    wide === o.key ? "grad-cyan" : "text-ink-soft hover:text-ink"
+                    wide === o.key ? "grad-brand" : "text-ink-soft hover:text-ink"
                   }`}
                 >
                   {o.text}
@@ -1164,7 +1163,7 @@ function Switch({
         checked={checked}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 size-4 shrink-0 accent-cyan-deep"
+        className="mt-0.5 size-4 shrink-0 accent-brand"
       />
       <span className="min-w-0">
         <span className="font-semibold">{label}</span>
