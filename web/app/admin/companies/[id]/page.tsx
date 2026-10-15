@@ -144,6 +144,12 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
   }
 
   useEffect(() => {
+    // The editor page links back to a named tab.
+    const asked = new URLSearchParams(window.location.search).get("tab");
+    if (asked && TABS.some((t) => t.key === asked)) setTab(asked);
+  }, []);
+
+  useEffect(() => {
     loadCompany();
     loadMedia();
     apiJson<Row[]>(`/api/admin/contacts?company_id=${id}`)
@@ -394,6 +400,10 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                     removeName="remove_logo"
                     hint="Trim the edges so it sits tight on the card. A transparent PNG keeps its transparency."
                   />
+                  <Link href={`/admin/companies/${id}/image?field=logo`} className="btn mt-1">
+                    <Icon name="grid" className="size-4" />
+                    Edit image on its own page
+                  </Link>
 
                   <div className="pt-3">
                     <ImagePicker
@@ -410,6 +420,13 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                       removeName="remove_favicon"
                       hint="The little square in a browser tab when someone opens a card. Square, and legible at 32 px."
                     />
+                    <Link
+                      href={`/admin/companies/${id}/image?field=favicon`}
+                      className="btn mt-2"
+                    >
+                      <Icon name="grid" className="size-4" />
+                      Edit icon on its own page
+                    </Link>
                   </div>
 
                   <fieldset className="pt-2">
