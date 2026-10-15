@@ -109,7 +109,7 @@ export default function ProfilePage() {
         </p>
       </header>
 
-      <form onSubmit={saveDetails} className="mb-7 max-w-xl border border-line bg-paper p-6">
+      <form onSubmit={saveDetails} className="surface mb-7 max-w-xl p-6">
         <h2 className="font-display text-lg font-bold">Details</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <label className="block space-y-1.5">
@@ -192,7 +192,7 @@ export default function ProfilePage() {
         </button>
       </form>
 
-      <section className="surface mt-7 p-6">
+      <section className="surface mt-7 max-w-2xl p-6">
         <h2 className="font-display text-lg font-bold">Two-step verification</h2>
         <p className="mt-1 text-sm text-ink-soft">
           A six-digit code from an authenticator app, on top of your password. Nothing is sent by
