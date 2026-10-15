@@ -2,10 +2,17 @@
 cards.truestaroman.com {
 	encode zstd gzip
 
-	# The API is reached through the front end, so only one upstream is
-	# public. Keeping it that way is what makes the session cookie
-	# first-party.
-	reverse_proxy web:3000
+	# The API is routed here rather than through the front end. Next resolves
+	# its rewrites when it builds, so a baked-in API address would be wrong in
+	# every environment but the one that built it. The browser still sees a
+	# single origin, which is what keeps the session cookie first-party.
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
 
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"

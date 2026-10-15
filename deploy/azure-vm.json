@@ -1,0 +1,134 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "comment": "One small host for the contact cards: a B1s with a managed disk, because SQLite wants a real filesystem rather than an SMB share. Ports 80 and 443 are open to the world; SSH only to the address that deployed it."
+  },
+  "parameters": {
+    "name": { "type": "string", "defaultValue": "cards" },
+    "size": { "type": "string", "defaultValue": "Standard_B1s" },
+    "adminPublicKey": { "type": "string" },
+    "sshFrom": { "type": "string", "metadata": { "description": "CIDR or address allowed to reach port 22" } },
+    "cloudInit": { "type": "string", "metadata": { "description": "base64 cloud-config" } }
+  },
+  "variables": {
+    "vnet": "[concat(parameters('name'), '-vnet')]",
+    "nsg": "[concat(parameters('name'), '-nsg')]",
+    "pip": "[concat(parameters('name'), '-ip')]",
+    "nic": "[concat(parameters('name'), '-nic')]",
+    "vm": "[concat(parameters('name'), '-vm')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('nsg')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "https",
+            "properties": {
+              "priority": 100, "direction": "Inbound", "access": "Allow", "protocol": "Tcp",
+              "sourceAddressPrefix": "*", "sourcePortRange": "*",
+              "destinationAddressPrefix": "*", "destinationPortRanges": ["80", "443"]
+            }
+          },
+          {
+            "name": "ssh",
+            "properties": {
+              "priority": 200, "direction": "Inbound", "access": "Allow", "protocol": "Tcp",
+              "sourceAddressPrefix": "[parameters('sshFrom')]", "sourcePortRange": "*",
+              "destinationAddressPrefix": "*", "destinationPortRange": "22"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('pip')]",
+      "location": "[resourceGroup().location]",
+      "sku": { "name": "Standard" },
+      "properties": { "publicIPAllocationMethod": "Static" }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('vnet')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": { "addressPrefixes": ["10.20.0.0/16"] },
+        "subnets": [{ "name": "default", "properties": { "addressPrefix": "10.20.1.0/24" } }]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2023-11-01",
+      "name": "[variables('nic')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('pip'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnet'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg'))]"
+      ],
+      "properties": {
+        "networkSecurityGroup": { "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsg'))]" },
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "subnet": { "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnet'), 'default')]" },
+              "publicIPAddress": { "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('pip'))]" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-07-01",
+      "name": "[variables('vm')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": ["[resourceId('Microsoft.Network/networkInterfaces', variables('nic'))]"],
+      "properties": {
+        "hardwareProfile": { "vmSize": "[parameters('size')]" },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "canonical", "offer": "ubuntu-24_04-lts", "sku": "server", "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage", "diskSizeGB": 32,
+            "managedDisk": { "storageAccountType": "StandardSSD_LRS" }
+          }
+        },
+        "osProfile": {
+          "computerName": "[variables('vm')]",
+          "adminUsername": "azureuser",
+          "customData": "[parameters('cloudInit')]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "/home/azureuser/.ssh/authorized_keys",
+                  "keyData": "[parameters('adminPublicKey')]"
+                }
+              ]
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [{ "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nic'))]" }]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "ip": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('pip'))).ipAddress]"
+    }
+  }
+}

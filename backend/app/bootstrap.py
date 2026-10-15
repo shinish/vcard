@@ -1,9 +1,11 @@
-"""Create the first super admin.
+"""Create the first administrator.
 
     uv run python -m app.bootstrap --email you@example.com
 
 Run once on a fresh database. Without --password a strong one is generated and
 printed; it is not stored anywhere else, so copy it before closing the shell.
+
+There is no role here to set: every administrator spans every company.
 """
 
 from __future__ import annotations
@@ -19,7 +21,7 @@ from .db import connect, init
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Create the first super admin")
+    parser = argparse.ArgumentParser(description="Create the first administrator")
     parser.add_argument("--email", required=True)
     parser.add_argument("--password")
     parser.add_argument("--name", default=None)
@@ -47,8 +49,8 @@ def main() -> int:
             return 1
         if existing:
             conn.execute(
-                "UPDATE users SET password_hash = ?, name = COALESCE(?, name), role = 'super' "
-                "WHERE id = ?",
+                "UPDATE users SET password_hash = ?, name = COALESCE(?, name), "
+                "disabled = 0 WHERE id = ?",
                 (hash_password(password), args.name, existing["id"]),
             )
             # any session opened with the old password stops working
@@ -56,15 +58,15 @@ def main() -> int:
         else:
             try:
                 conn.execute(
-                    "INSERT INTO users (email, password_hash, name, role, company_id, created_at) "
-                    "VALUES (?, ?, ?, 'super', NULL, ?)",
+                    "INSERT INTO users (email, password_hash, name, created_at) "
+                    "VALUES (?, ?, ?, ?)",
                     (identifier, hash_password(password), args.name, datetime.now(UTC).isoformat()),
                 )
             except sqlite3.IntegrityError:
                 print(f"{identifier} already has an account")
                 return 1
 
-    print(f"super admin {'updated' if existing else 'created'}\n  username: {identifier}")
+    print(f"administrator {'updated' if existing else 'created'}\n  username: {identifier}")
     if not args.password:
         print(f"  password: {password}\n\nCopy that now; it is not recoverable.")
     return 0

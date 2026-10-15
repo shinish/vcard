@@ -1303,3 +1303,33 @@ def test_a_company_can_name_its_own_notification_address(seeded):
         "/api/admin/contacts", data={"first_name": "Noisy", "company_id": company}
     )
     assert made.status_code == 201
+
+
+def test_bootstrap_creates_the_first_administrator_on_a_fresh_database(tmp_path, monkeypatch):
+    """The only way into a new install. It broke once because it still wrote a
+    role column that no longer exists, and nothing noticed until a deploy."""
+    import importlib
+    import sys
+
+    monkeypatch.setenv("VCARD_DB", str(tmp_path / "fresh.db"))
+    monkeypatch.setenv("VCARD_UPLOADS", str(tmp_path / "uploads"))
+    for module in ("app.config", "app.db", "app.auth", "app.bootstrap"):
+        if module in sys.modules:
+            importlib.reload(sys.modules[module])
+    import app.bootstrap as bootstrap
+    from app.auth import verify_password
+    from app.db import connect as fresh_connect
+
+    monkeypatch.setattr(
+        sys, "argv", ["bootstrap", "--email", "First@Example.com", "--password", "a-real-password"]
+    )
+    assert bootstrap.main() == 0
+
+    with fresh_connect() as conn:
+        row = conn.execute("SELECT email, password_hash, disabled FROM users").fetchone()
+    assert row["email"] == "first@example.com"  # lowercased, as login expects
+    assert row["disabled"] == 0
+    assert verify_password("a-real-password", row["password_hash"])
+
+    # A second run refuses rather than resetting someone's password by accident.
+    assert bootstrap.main() == 1
