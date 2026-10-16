@@ -60,8 +60,12 @@ ssh azureuser@<ip> 'cd /opt/cards && sudo docker compose exec -T api \
 ```
 
 Then point an A record at the address; Caddy gets the certificate itself.
-Updating is `docker compose pull && docker compose up -d` — the database and
-the uploads are on a named volume and outlive the images.
+Updating is `sudo sh /opt/cards/update.sh` — the database and the uploads are
+on a named volume and outlive the images. The script exists because a plain
+`docker compose pull` fetches both images at once, which on a 891 MB host ran
+the memory down until the containers were killed and the box stopped
+answering; it keeps a swapfile in place, pulls one at a time, and waits for
+the login page before reporting.
 
 Two things the deployment taught, both now in the code: Next resolves its
 rewrites when it *builds*, so the API is routed by Caddy rather than through
