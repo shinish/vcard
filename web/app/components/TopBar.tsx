@@ -130,7 +130,6 @@ export default function TopBar({ name, photoUrl }: { name: string; photoUrl?: st
       <Link href="/admin/profile" className="workspace-profile" aria-label={`Your profile: ${name}`}>
         <span className="workspace-avatar" aria-hidden="true">{photoUrl ? <Image src={photoUrl} alt="" width={42} height={42} className="size-full rounded-full object-cover" /> : name.slice(0, 2).toUpperCase()}</span>
         <span className="hidden min-w-0 sm:block"><strong className="block truncate">{name}</strong><span className="block text-xs text-ink-soft">Administrator</span></span>
-        <Icon name="arrow-right" className="hidden size-3.5 rotate-90 text-ink-soft sm:block" />
       </Link>
     </header>
   );

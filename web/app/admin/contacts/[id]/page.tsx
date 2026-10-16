@@ -254,8 +254,8 @@ export default function ContactPage({ params }: { params: Promise<{ id: string }
             <h2 className="font-display text-sm font-bold">What is on the card</h2>
             <dl className="mt-3 grid gap-x-6 gap-y-2">
               {[
-                ["Company", (company?.name as string) ?? "—"],
-                ["Branch", (company?.branch as string) || "—"],
+                ["Company", (company?.name as string) ?? ""],
+                ["Branch", (company?.branch as string) || ""],
                 [
                   "Card language",
                   LANGUAGES.find((l) => l.code === company?.language)?.label ?? "English",

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { joinPhone } from "../lib/phone";
 import { DIAL_CODES, flagOf, splitDial } from "../lib/countries";
 
 /** A dial code beside a number, posting one value under `name`.
@@ -27,7 +28,7 @@ export default function PhoneField({
   return (
     <label className="block space-y-1.5">
       <span className="text-sm font-semibold text-ink-soft">{label}</span>
-      <input type="hidden" name={name} value={[dial, rest].filter(Boolean).join(" ")} />
+      <input type="hidden" name={name} value={joinPhone(dial, rest)} />
       <span className="flex gap-2">
         <select
           value={dial}

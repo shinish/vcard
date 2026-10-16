@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { use, useCallback, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 
 import CopyLink from "../../../components/CopyLink";
 import ImagePicker from "../../../components/ImagePicker";
@@ -96,6 +96,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
   const [logoScale, setLogoScale] = useState<number>(DEFAULT_LOGO_SCALE);
   const [language, setLanguage] = useState<Language>(DEFAULT_LANGUAGE);
   const [font, setFont] = useState<FontKey>(DEFAULT_FONT);
+  const fontChoiceApplied = useRef(false);
   const [fit, setFit] = useState<WallpaperFit>(DEFAULT_WALLPAPER_FIT);
   const [showQr, setShowQr] = useState(true);
   const [showQrDownload, setShowQrDownload] = useState(true);
@@ -136,7 +137,11 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
         setLogoAt(c.logo_position ?? DEFAULT_LOGO_POSITION);
         setLogoScale(c.logo_scale ?? DEFAULT_LOGO_SCALE);
         setLanguage(c.language ?? DEFAULT_LANGUAGE);
-        setFont(c.font ?? DEFAULT_FONT);
+        const requestedFont = new URLSearchParams(window.location.search).get("font");
+        const chosenFont = !fontChoiceApplied.current && FONTS.find((item) => item.key === requestedFont);
+        setFont(chosenFont ? chosenFont.key : c.font ?? DEFAULT_FONT);
+        if (chosenFont) setTab("branding");
+        fontChoiceApplied.current = true;
         setFit(c.wallpaper_fit ?? DEFAULT_WALLPAPER_FIT);
         setShowQr(Boolean(c.show_qr ?? true));
         setShowQrDownload(Boolean(c.show_qr_download ?? true));
@@ -746,6 +751,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                   <label className="block space-y-1.5">
                     <span className="text-sm font-semibold text-ink-soft">Type</span>
                     <select
+                      id="company-font"
                       name="font"
                       value={font}
                       onChange={(e) => setFont(e.target.value as FontKey)}
@@ -926,7 +932,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                         {[row.first_name, row.last_name].filter(Boolean).join(" ")}
                       </p>
                       <p className="truncate text-sm text-ink-soft">
-                        {[row.job_title, row.org].filter(Boolean).join(" · ") || "—"}
+                        {[row.job_title, row.org].filter(Boolean).join(" · ") || ""}
                       </p>
                     </div>
 
@@ -1004,8 +1010,8 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                   </p>
                   <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
                     {[
-                      { term: "Name", value: company ? companyLabel(company) : "—", tab: "overview" },
-                      { term: "Link name", value: company?.slug ?? "—", tab: "overview" },
+                      { term: "Name", value: company ? companyLabel(company) : "", tab: "overview" },
+                      { term: "Link name", value: company?.slug ?? "", tab: "overview" },
                       {
                         term: "Card language",
                         value: LANGUAGES.find((l) => l.code === language)?.native ?? language,

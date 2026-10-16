@@ -125,7 +125,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             title="Your account"
             className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-white/[0.07]"
           >
-            <span className="grad-brand flex size-9 shrink-0 items-center justify-center rounded-full font-display text-xs font-bold">
+            <span className="workspace-account-avatar grad-brand flex size-9 shrink-0 items-center justify-center rounded-full font-display text-xs font-bold">
               {me.photo_url ? <Image src={me.photo_url} alt="" width={36} height={36} className="size-full rounded-full object-cover" /> : (me.name || me.email).slice(0, 2).toUpperCase()}
             </span>
             <span className="min-w-0 flex-1 text-xs leading-tight">
@@ -134,7 +134,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </span>
               <span className="block text-white/55">Administrator</span>
             </span>
-            <Icon name="arrow-right" className="size-4 -rotate-90 text-white/45" />
           </button>
 
           {accountOpen ? (

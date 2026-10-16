@@ -50,7 +50,7 @@ export default function UsersPage() {
       }
       setMade({
         email: String(data.get("email")),
-        name: String(data.get("name") || "—"),
+        name: String(data.get("name") || ""),
         password: String(data.get("password")),
       });
       form.reset();

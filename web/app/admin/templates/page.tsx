@@ -15,12 +15,7 @@ import {
   paletteStyle,
 } from "../../lib/api";
 
-/** The background templates and type sets, and who is using each.
- *
- *  Read-only on purpose: a template belongs to a company, so it is chosen on
- *  that company's Card design tab. This page answers "what are my choices" and
- *  "who has what" in one place.
- */
+/** Browse backgrounds and choose company typography. */
 export default function TemplatesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -118,14 +113,21 @@ export default function TemplatesPage() {
       </div>
 
       <div className="template-section-heading">
-        <div><h2>Let your type do the talking</h2><p>Explore the type sets available in your company’s card designer.</p></div>
+        <div><h2>Let your type do the talking</h2><p>Choose a company, then configure its heading and body fonts. Save changes in the company editor.</p></div>
       </div>
+      <label className="mb-5 block max-w-md text-sm font-semibold" htmlFor="font-company">Company for font settings
+        <select id="font-company" className="field mt-2" value={companyId} disabled={!loaded || !!error} onChange={(event) => setCompanyId(event.target.value)}>
+          <option value="">Choose a company or branch</option>
+          {companies.map((company) => <option key={company.id} value={company.id}>{companyLabel(company)}</option>)}
+        </select>
+      </label>
       <div className="template-font-grid">
         {FONTS.map((font) => (
           <section key={font.key} className={`template-font-card type-${font.key}`}>
             <div className="template-font-top"><h3>{font.label}</h3><span aria-hidden="true">Aa</span></div>
             <p className="template-font-sample">A memorable first impression.</p>
             <p className="template-font-hint">{font.hint}</p>
+            {companyId ? <Link className="btn mt-4 text-xs" href={`/admin/companies/${companyId}?tab=branding&font=${font.key}#company-font`}>Configure this font<Icon name="arrow-right" className="size-3.5" /></Link> : <p className="mt-4 text-xs text-ink-soft">Choose a company above to configure this font.</p>}
             <ul className="mt-4 flex flex-wrap gap-1.5">
               {companies.filter((company) => (company.font ?? "poppins") === font.key).map((company) => <li key={company.id}><Link href={`/admin/companies/${company.id}`} className="chip hover:text-ink">{companyLabel(company)}</Link></li>)}
             </ul>

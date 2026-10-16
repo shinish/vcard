@@ -161,7 +161,7 @@ export default function ContactForm({
         url: saved.url,
         public_id: saved.public_id,
         name: [body.get("first_name"), body.get("last_name")].filter(Boolean).join(" "),
-        company: chosen ? companyLabel(chosen) : "—",
+        company: chosen ? companyLabel(chosen) : "",
       });
     } catch (cause) {
       setError(

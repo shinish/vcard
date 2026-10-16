@@ -338,7 +338,7 @@ export default function DashboardPage() {
                         </Link>
                       </span>
                     </td>
-                    <td className="truncate p-3 text-ink-soft">{row.email ?? "—"}</td>
+                    <td className="truncate p-3 text-ink-soft">{row.email ?? ""}</td>
                     <td className="truncate p-3">
                       <Link
                         href={`/admin/companies/${row.company_id}`}

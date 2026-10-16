@@ -129,7 +129,7 @@ export default function PeoplePage() {
                       ) : <span className="people-avatar">{(row.first_name?.[0] ?? "") + (row.last_name?.[0] ?? "")}</span>}
                       <span className="min-w-0"><strong className="block truncate">{name}</strong><span className="people-secondary">{row.job_title || "No job title"}</span></span>
                     </Link>
-                    <span className="min-w-0"><span className="block truncate">{row.company}</span><span className="people-secondary">{row.branch || row.org || "—"}</span></span>
+                    <span className="min-w-0"><span className="block truncate">{row.company}</span><span className="people-secondary">{row.branch || row.org || ""}</span></span>
                     <span className="people-updated">{date && !Number.isNaN(date.getTime()) ? <time dateTime={row.updated_at!}>{date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</time> : "Not updated"}</span>
                     <div className="people-actions">
                       <button type="button" onClick={() => setShowing(showing === row.id ? null : row.id)} className="people-action" title="Share link" aria-label={`Share link for ${name}`} aria-expanded={showing === row.id} aria-controls={`person-link-${row.id}`}><Icon name="link" className="size-4" /></button>

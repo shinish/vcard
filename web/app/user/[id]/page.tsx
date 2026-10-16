@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { splitDial } from "../../lib/countries";
 
 import CardActions, { type Action } from "../../components/CardActions";
 import CardLanguage from "../../components/CardLanguage";
@@ -66,10 +67,11 @@ function toRow(field: ContactField): Row | null {
       lon: parts.lon ?? null,
     };
   }
-  const value = String(field.value);
+  const value = String(field.value ?? "").trim();
   if (!value) return null;
   switch (kind) {
     case "phone":
+      if (!/\d/.test(splitDial(value).rest)) return null;
       return { kind, label, icon, value, href: `tel:${value.replace(/\s+/g, "")}` };
     case "email":
       return { kind, label, icon, value, href: `mailto:${value}` };
@@ -211,7 +213,7 @@ export default async function CardPage({
         ...(wallpaperUrl ? ({ "--wallpaper": `url(${API}${wallpaperUrl})` } as React.CSSProperties) : {}),
       }}
     >
-      <article className="relative flex w-full flex-col bg-paper lg:max-w-lg lg:rounded-2xl lg:shadow-[var(--shadow-lift)]">
+      <article className="contact-card relative flex w-full flex-col bg-paper lg:max-w-lg lg:rounded-2xl lg:shadow-[var(--shadow-lift)]">
         {/* Header band: the company's colours, the logo and the language pick. */}
         <header className="accent-band px-6 pb-20 pt-5 text-white lg:rounded-t-2xl">
           <div className={`flex items-center gap-3 ${logoBand ? "justify-between" : "justify-end"}`}>
@@ -257,12 +259,12 @@ export default async function CardPage({
                 alt={name}
                 width={128}
                 height={128}
-                className="mx-auto size-32 rounded-2xl border-4 border-paper object-cover shadow-[var(--shadow-soft)]"
+                className="mx-auto size-24 shrink-0 rounded-lg border-4 border-paper object-cover object-center shadow-[var(--shadow-soft)]"
               />
             ) : (
               <p
                 aria-hidden="true"
-                className="mx-auto flex size-32 items-center justify-center rounded-2xl border-4 border-paper bg-wash font-display text-3xl text-ink-soft shadow-[var(--shadow-soft)]"
+                className="mx-auto flex size-24 shrink-0 items-center justify-center rounded-lg border-4 border-paper bg-wash font-display text-3xl text-ink-soft shadow-[var(--shadow-soft)]"
               >
                 {initials(card)}
               </p>
