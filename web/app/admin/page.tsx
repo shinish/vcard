@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import TrendChart from "../components/TrendChart";
 import { useEffect, useState } from "react";
 
 import { Icon, type IconName } from "../components/icons";
@@ -19,7 +20,7 @@ const TILES = [
     label: "People with cards",
     icon: "people" as IconName,
     tint: "#2563eb",
-    wash: "#eff6ff",
+    wash: "#f8bce6",
     series: "new_cards" as const,
     change: "new_cards" as const,
     note: "new in this period",
@@ -29,7 +30,7 @@ const TILES = [
     label: "Cards with traffic",
     icon: "card" as IconName,
     tint: "#10b981",
-    wash: "#ecfdf5",
+    wash: "#ffe079",
     series: "views" as const,
     change: "active_cards" as const,
     note: "vs the period before",
@@ -39,7 +40,7 @@ const TILES = [
     label: "Card views",
     icon: "eye" as IconName,
     tint: "#7c3aed",
-    wash: "#f5f3ff",
+    wash: "#c9dcfc",
     series: "views" as const,
     change: "views" as const,
     note: "vs the period before",
@@ -49,7 +50,7 @@ const TILES = [
     label: "Saved to a phone",
     icon: "download" as IconName,
     tint: "#f97316",
-    wash: "#fff7ed",
+    wash: "#d9d0f4",
     series: "saves" as const,
     change: "saves" as const,
     note: "vs the period before",
@@ -157,7 +158,7 @@ export default function DashboardPage() {
           return (
             <div
               key={tile.key}
-              className="surface overflow-hidden p-4"
+              className="summary-card surface overflow-hidden p-4"
               style={{ background: tile.wash }}
             >
               <div className="flex items-start gap-3">
@@ -184,7 +185,7 @@ export default function DashboardPage() {
               <div className="metric-trend mt-4 flex flex-wrap items-end justify-between gap-3">
                 <p className="flex flex-wrap items-center gap-1 text-xs font-semibold">
                   {change !== null ? (
-                    <>
+                    <span className="summary-change">
                       <span style={{ color: change >= 0 ? "#10b981" : "#c2410c" }}>
                         <Icon
                           name={change >= 0 ? "trend-up" : "trend-down"}
@@ -195,7 +196,7 @@ export default function DashboardPage() {
                         {change >= 0 ? "+" : ""}
                         {change}%
                       </span>
-                    </>
+                    </span>
                   ) : (
                     <span className="text-ink-soft">
                       {tile.key === "contacts" ? `${stats.totals.new_cards} new` : "no earlier data"}
@@ -217,11 +218,11 @@ export default function DashboardPage() {
             <h2 className="font-display text-lg font-bold">Card views</h2>
             <div className="flex items-center gap-4 text-xs font-semibold">
               <span className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full" style={{ background: "#2563eb" }} />
+                <span className="size-2.5 rounded-full" style={{ background: "#729bd5" }} />
                 Views
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="size-2.5 rounded-full" style={{ background: "#93c5fd" }} />
+                <span className="size-2.5 rounded-full" style={{ background: "#c1d8f2" }} />
                 Saves
               </span>
             </div>
@@ -242,7 +243,7 @@ export default function DashboardPage() {
           ) : (
             <ul className="space-y-3">
               {busiest.map((card, i) => (
-                <li key={card.id} className="flex items-center gap-3">
+                <li key={card.id} className="performance-row flex items-center gap-3">
                   <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-wash font-mono text-[11px] text-ink-soft">
                     {i + 1}
                   </span>
@@ -273,10 +274,10 @@ export default function DashboardPage() {
                       className="mt-1 block h-1.5 w-full rounded-full bg-wash"
                     >
                       <span
-                        className="block h-full rounded-full"
+                        className="progress-fill block h-full rounded-full"
                         style={{
                           width: `${(card.views / mostViews) * 100}%`,
-                          background: "#2563eb",
+                          background: `hsl(${Math.round(Math.min(1, Math.max(0, card.views / mostViews)) * 145)} 65% 38%)`,
                         }}
                       />
                     </span>
@@ -369,16 +370,14 @@ export default function DashboardPage() {
               <Link
                 key={action.text}
                 href={action.href}
-                className="flex flex-col items-center gap-2 rounded-xl p-4 text-center text-xs font-semibold transition-transform hover:-translate-y-0.5"
-                style={{ background: action.wash }}
+                className="quick-action-card"
               >
                 <span
-                  className="flex size-10 items-center justify-center rounded-full text-white"
-                  style={{ background: action.tint }}
+                  className="quick-action-icon"
                 >
                   <Icon name={action.icon} className="size-4.5" />
                 </span>
-                {action.text}
+                <span>{action.text}</span>
               </Link>
             ))}
           </div>
@@ -394,87 +393,15 @@ function Spark({ points, tint }: { points: number[]; tint: string }) {
   const peak = Math.max(1, ...points);
   const w = 88;
   const h = 32;
-  const step = w / (points.length - 1);
-  const line = points
-    .map((v, i) => `${i ? "L" : "M"}${(i * step).toFixed(1)} ${(h - (v / peak) * (h - 4) - 2).toFixed(1)}`)
-    .join(" ");
+  const slot = w / points.length;
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="h-8 w-22 shrink-0" aria-hidden="true">
-      <path d={`${line} L${w} ${h} L0 ${h} Z`} fill={tint} opacity={0.12} />
-      <path d={line} fill="none" stroke={tint} strokeWidth={2} strokeLinejoin="round" />
+      {points.map((value, index) => <rect key={index} x={index * slot} y={h - value / peak * (h - 3)} width={Math.max(1, slot - 1)} height={value / peak * (h - 3)} rx="1" fill={tint} opacity={0.45 + index / points.length * 0.4} />)}
     </svg>
   );
 }
 
-/** Views against saves, one pair of bars per day.
- *
- *  Bars rather than lines because each day is a count in its own right, and
- *  the two series share one axis so they can be compared directly. */
+/** Both daily count series use the shared chart renderer. */
 function Bars({ series }: { series: Analytics["series"] }) {
-  const W = 640;
-  const H = 240;
-  const pad = { top: 10, right: 8, bottom: 26, left: 34 };
-  const plotW = W - pad.left - pad.right;
-  const plotH = H - pad.top - pad.bottom;
-  const peak = Math.max(1, ...series.flatMap((d) => [d.views, d.saves]));
-  const step = Math.max(1, Math.ceil(peak / 4));
-  const ceiling = step * 4;
-  const slot = plotW / Math.max(1, series.length);
-  const barW = Math.max(3, Math.min(12, slot / 2.6));
-  const y = (v: number) => pad.top + plotH - (v / ceiling) * plotH;
-
-  return (
-    <figure className="m-0">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Views and saves per day">
-        {[0, 1, 2, 3, 4].map((n) => (
-          <g key={n}>
-            <line
-              x1={pad.left}
-              x2={W - pad.right}
-              y1={y(step * n)}
-              y2={y(step * n)}
-              stroke="var(--color-line)"
-              strokeWidth={1}
-            />
-            <text x={pad.left - 6} y={y(step * n) + 4} textAnchor="end" className="fill-ink-soft text-[10px]">
-              {step * n}
-            </text>
-          </g>
-        ))}
-
-        {series.map((d, i) => {
-          const centre = pad.left + slot * i + slot / 2;
-          return (
-            <g key={d.day}>
-              <rect
-                x={centre - barW - 1}
-                y={y(d.views)}
-                width={barW}
-                height={Math.max(0, y(0) - y(d.views))}
-                rx={2}
-                fill="#2563eb"
-              >
-                <title>{`${d.day}: ${d.views} views`}</title>
-              </rect>
-              <rect
-                x={centre + 1}
-                y={y(d.saves)}
-                width={barW}
-                height={Math.max(0, y(0) - y(d.saves))}
-                rx={2}
-                fill="#93c5fd"
-              >
-                <title>{`${d.day}: ${d.saves} saved`}</title>
-              </rect>
-              {series.length <= 16 || i % 3 === 0 ? (
-                <text x={centre} y={H - 8} textAnchor="middle" className="fill-ink-soft text-[9px]">
-                  {d.day.slice(5)}
-                </text>
-              ) : null}
-            </g>
-          );
-        })}
-      </svg>
-    </figure>
-  );
+  return <TrendChart series={series.map(day => ({ ...day, clicks: day.saves }))} secondaryLabel="Saves" showLegend={false} />;
 }

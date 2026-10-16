@@ -3,11 +3,23 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+
+import { version as appVersion } from "../../package.json";
 
 import TopBar from "../components/TopBar";
 import { Icon, type IconName } from "../components/icons";
 import { type Me, apiJson } from "../lib/api";
+
+function subscribeTheme(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener("workspace-theme-change", onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener("workspace-theme-change", onChange);
+  };
+}
+function readTheme() { return localStorage.getItem("workspace-theme") === "dark" ? "dark" : "light"; }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -17,6 +29,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [accountOpen, setAccountOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const theme = useSyncExternalStore(subscribeTheme, readTheme, () => "light");
+  function toggleTheme() {
+    localStorage.setItem("workspace-theme", theme === "dark" ? "light" : "dark");
+    window.dispatchEvent(new Event("workspace-theme-change"));
+  }
 
   const [menuPath, setMenuPath] = useState(pathname);
   if (menuPath !== pathname) {
@@ -70,21 +87,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div data-sidebar-collapsed={collapsed} className="workspace flex min-h-dvh flex-col lg:flex-row">
+    <div data-theme={theme} data-sidebar-collapsed={collapsed} className="workspace flex min-h-dvh flex-col lg:flex-row">
       <a href="#workspace-content" className="skip-link">Skip to content</a>
       <aside className="workspace-sidebar flex shrink-0 flex-col">
         <div className="flex items-center justify-between gap-4">
         <Link href="/admin" aria-label="True Star dashboard" className="workspace-brand flex items-center gap-3">
           <Image src="/tbs-logo.png" alt="" width={42} height={40} />
           <span className="font-display text-xl font-bold leading-tight text-white">
-            True Star
+            <span className="brand-engraved">True Star</span>
             <span className="block text-xs font-medium text-cyan">Contact cards</span>
           </span>
         </Link>
 
         <button type="button" className="workspace-menu lg:hidden" aria-expanded={menuOpen} aria-controls="workspace-navigation" onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? "Close menu" : "Menu"}<Icon name="grid" className="size-4" /></button>
         </div>
-        <button type="button" className="sidebar-collapse" onClick={() => { setCollapsed((value) => !value); setAccountOpen(false); }} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} aria-controls="workspace-navigation" title={collapsed ? "Expand sidebar" : "Collapse sidebar"}><Icon name="arrow-right" className={`size-4 ${collapsed ? "" : "rotate-180"}`} /><span>Collapse navigation</span></button>
+        <button type="button" className="sidebar-collapse" onClick={() => { setCollapsed((value) => !value); setAccountOpen(false); }} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} aria-controls="workspace-navigation" title={collapsed ? "Expand sidebar" : "Collapse sidebar"}><svg aria-hidden="true" viewBox="0 0 32 112" className="sidebar-collapse-shape" fill="none"><path d="M28 5 14 19Q10 23 10 29V83Q10 89 14 93L28 107" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg><svg aria-hidden="true" viewBox="0 0 16 16" className="sidebar-collapse-arrow size-3" fill="currentColor"><path d="M5 3.5a.7.7 0 0 1 1.1-.58l6 4a1.3 1.3 0 0 1 0 2.16l-6 4A.7.7 0 0 1 5 12.5z" /></svg></button>
         <nav id="workspace-navigation" aria-label="Main navigation" className={`${menuOpen ? "flex" : "hidden"} workspace-nav mt-6 flex-col gap-1 lg:flex`}>
           {nav.map((item) => {
             // /admin is the dashboard itself, so it only lights on an exact match
@@ -162,6 +179,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           ) : null}
         </div>
+        <button type="button" className="sidebar-theme" onClick={toggleTheme} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`} title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}><span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><span className="sidebar-theme-label">{theme === "dark" ? "Light theme" : "Dark theme"}</span></button>
+        <p className="sidebar-version" title={`Version ${appVersion}`}><span className="sidebar-version-label">Version </span>{appVersion}</p>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">

@@ -553,7 +553,7 @@ function Tile({
   footer?: string;
 }) {
   return (
-    <div className="analytics-metric surface p-4">
+    <div className="summary-card analytics-metric surface p-4">
       <span className="tile-icon size-10">
         <Icon name={icon} className="size-5" />
       </span>

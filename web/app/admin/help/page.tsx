@@ -101,7 +101,13 @@ export default function HelpPage() {
         </section>
         <aside className="help-shortcuts surface">
           <span className="tile-icon size-10"><Icon name="help" className="size-5" /></span>
-          <h2>Where do you want to go?</h2>
+          <h2>Contact True Star</h2>
+          <p>Need a hand? Contact our team.</p>
+          <a href="tel:+96891232596"><Icon name="phone" className="size-4" />+968 91232596</a>
+          <a href="tel:+96890743018"><Icon name="phone" className="size-4" />+968 90743018</a>
+          <a href="mailto:info@truestaroman.com"><Icon name="mail" className="size-4" />info@truestaroman.com</a>
+          <a href="https://www.truestaroman.com/" target="_blank" rel="noopener noreferrer"><Icon name="globe" className="size-4" />www.truestaroman.com</a>
+          <h2 className="mt-6">Workspace shortcuts</h2>
           <p>Jump straight to the right part of your workspace.</p>
           <Link href="/admin/companies">Manage companies<Icon name="arrow-right" className="size-4" /></Link>
           <Link href="/admin/people">Find a person<Icon name="arrow-right" className="size-4" /></Link>

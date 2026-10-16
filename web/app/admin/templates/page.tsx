@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import {
   type Company,
+  type FontKey,
   FONTS,
   OFFERED_THEMES,
   THEMES,
@@ -21,6 +22,7 @@ export default function TemplatesPage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<ThemeKey>("plain");
   const [companyId, setCompanyId] = useState("");
+  const [selectedFont, setSelectedFont] = useState<FontKey>("poppins");
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -69,7 +71,7 @@ export default function TemplatesPage() {
           <p className="template-studio-note">Preview only. Choose and save the template in the company’s card designer.</p>
         </div>
 
-        <div className={`template-stage card-page tpl-${active.key}`} style={palette}>
+        <div className={`template-stage card-page tpl-${active.key} type-${selectedFont}`} style={palette}>
           <span className="template-stage-caption">Sample card</span>
           <div className="template-demo-card">
             <span className="template-demo-brand">Your company</span>
@@ -113,7 +115,7 @@ export default function TemplatesPage() {
       </div>
 
       <div className="template-section-heading">
-        <div><h2>Let your type do the talking</h2><p>Choose a company, then configure its heading and body fonts. Save changes in the company editor.</p></div>
+        <div><h2>Let your type do the talking</h2><p>Select a font to preview it instantly. Choose a company to save that font in its editor.</p></div>
       </div>
       <label className="mb-5 block max-w-md text-sm font-semibold" htmlFor="font-company">Company for font settings
         <select id="font-company" className="field mt-2" value={companyId} disabled={!loaded || !!error} onChange={(event) => setCompanyId(event.target.value)}>
@@ -121,13 +123,19 @@ export default function TemplatesPage() {
           {companies.map((company) => <option key={company.id} value={company.id}>{companyLabel(company)}</option>)}
         </select>
       </label>
+      <div className="mb-5 flex flex-wrap items-center gap-3" role="status">
+        <span className="text-sm">Selected: <strong>{FONTS.find((font) => font.key === selectedFont)?.label}</strong></span>
+        {companyId ? <Link className="btn btn-primary text-sm" href={`/admin/companies/${companyId}?tab=branding&font=${selectedFont}#company-font`}>Configure selected font<Icon name="arrow-right" className="size-4" /></Link> : <span className="text-xs text-ink-soft">Choose a company above to apply your selection.</span>}
+      </div>
       <div className="template-font-grid">
         {FONTS.map((font) => (
-          <section key={font.key} className={`template-font-card type-${font.key}`}>
+          <section key={font.key} className={`template-font-card type-${font.key} ${selectedFont === font.key ? "is-selected" : ""}`}>
+            <button type="button" className="template-font-select" aria-label={`Select ${font.label} font`} aria-pressed={selectedFont === font.key} onClick={() => setSelectedFont(font.key)}>
             <div className="template-font-top"><h3>{font.label}</h3><span aria-hidden="true">Aa</span></div>
             <p className="template-font-sample">A memorable first impression.</p>
             <p className="template-font-hint">{font.hint}</p>
-            {companyId ? <Link className="btn mt-4 text-xs" href={`/admin/companies/${companyId}?tab=branding&font=${font.key}#company-font`}>Configure this font<Icon name="arrow-right" className="size-3.5" /></Link> : <p className="mt-4 text-xs text-ink-soft">Choose a company above to configure this font.</p>}
+            <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold">{selectedFont === font.key ? <><Icon name="check" className="size-4" />Selected</> : "Select font"}</span>
+            </button>
             <ul className="mt-4 flex flex-wrap gap-1.5">
               {companies.filter((company) => (company.font ?? "poppins") === font.key).map((company) => <li key={company.id}><Link href={`/admin/companies/${company.id}`} className="chip hover:text-ink">{companyLabel(company)}</Link></li>)}
             </ul>
