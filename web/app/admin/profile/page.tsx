@@ -101,7 +101,7 @@ export default function ProfilePage() {
     "btn btn-primary";
 
   return (
-    <>
+    <div className="profile-layout">
       <header className="mb-7">
         <h1 className="font-display text-2xl font-bold">Your profile</h1>
         <p className="mt-1 text-sm text-ink-soft">
@@ -343,6 +343,6 @@ export default function ProfilePage() {
           </button>
         )}
       </section>
-    </>
+    </div>
   );
 }
