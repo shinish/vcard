@@ -1560,7 +1560,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                       <span className="block text-[11px] text-ink-soft">{company?.name}</span>
                     ) : null}
                     <span className="accent-rule mx-auto mt-2 block h-1 w-10 rounded-full" />
-                    <span className="mt-3 block rounded-full bg-ink py-1.5 text-[11px] font-semibold text-white">
+                    <span className="mt-3 block whitespace-nowrap rounded-full bg-ink px-2 py-1.5 text-[11px] font-semibold text-white">
                       Save contact
                     </span>
                   </div>

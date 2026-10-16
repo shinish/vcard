@@ -97,7 +97,7 @@ export default function CardActions({
         </label>
       ) : null}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {allowSave ? (
           <a
             href={agreed || !requireConsent ? vcfUrl : undefined}
@@ -111,11 +111,11 @@ export default function CardActions({
               track(publicId, "save");
               setNote(doneLabel);
             }}
-            className={`btn btn-dark flex-1 py-3.5 font-display ${
+            className={`save-contact-action btn btn-dark flex-1 py-3.5 font-display ${
               requireConsent && !agreed ? "pointer-events-none opacity-50" : ""
             }`}
           >
-            <Icon name="download" className="size-4" />
+            <Icon name="download" className="size-4 shrink-0" />
             {saveLabel}
           </a>
         ) : null}
@@ -123,7 +123,7 @@ export default function CardActions({
           type="button"
           onClick={share}
           aria-label={shareLabel}
-          className={`btn px-4 py-3.5 ${allowSave ? "" : "flex-1 font-display"}`}
+          className={`btn shrink-0 px-3 py-3.5 ${allowSave ? "" : "flex-1 font-display"}`}
         >
           <Icon name="share" className="size-4" />
           {allowSave ? null : shareLabel}

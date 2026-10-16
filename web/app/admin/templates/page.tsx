@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Icon } from "../../components/icons";
 import { useEffect, useState } from "react";
 
 import {
@@ -23,102 +24,114 @@ import {
 export default function TemplatesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<ThemeKey>("plain");
+  const [companyId, setCompanyId] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     apiJson<Company[]>("/api/admin/companies")
       .then(setCompanies)
-      .catch((e) => setError(e.message));
+      .catch((e) => setError(e.message))
+      .finally(() => setLoaded(true));
   }, []);
 
   const users = (key: ThemeKey) => companies.filter((c) => (c.theme ?? "plain") === key);
+  const themes = THEMES.filter((theme) =>
+    OFFERED_THEMES.some((o) => o.key === theme.key) || companies.some((c) => (c.theme ?? "plain") === theme.key),
+  );
+  const active = themes.find((theme) => theme.key === selected) ?? themes[0];
+  const activeUsers = users(active.key);
+  const palette = paletteStyle(activeUsers[0]?.accents ?? null);
 
   return (
-    <>
-      <header className="mb-6">
-        <h1 className="font-display text-2xl font-bold">Card templates</h1>
-        <p className="mt-1 text-sm text-ink-soft">
-          Every background a card can wear, with the companies using it. Pick one on a
-          company&rsquo;s Card design tab; a new company starts on the default set in{" "}
-          <Link href="/admin/settings" className="font-semibold text-brand-ink hover:underline">
-            Settings
-          </Link>
-          .
-        </p>
+    <div className="template-lab">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl font-bold">Card templates</h1>
+          <p className="mt-2 text-sm text-ink-soft">Explore a new look for every introduction. Preview a design, then make it your company’s own.</p>
+        </div>
+        <Link href="/admin/settings" className="btn"><Icon name="gear" className="size-4" />Default settings</Link>
       </header>
 
-      {error ? (
-        <p role="alert" className="mb-5 rounded-lg border-l-2 border-brand bg-paper px-3 py-2 text-sm">
-          {error}
-        </p>
-      ) : null}
+      {error ? <p role="alert" className="mb-5 text-sm">{error}</p> : null}
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {THEMES.filter(
-          (theme) =>
-            OFFERED_THEMES.some((o) => o.key === theme.key) ||
-            companies.some((c) => (c.theme ?? "plain") === theme.key),
-        ).map((theme) => {
+      <section className="template-studio" aria-label="Selected template preview">
+        <div className="template-studio-copy">
+          <span className="template-studio-label"><span aria-hidden="true" />Template studio</span>
+          <h2>{active.label}</h2>
+          <p className="template-studio-description">{active.hint}. Your identity, ready for the next connection.</p>
+          <div className="template-studio-tags"><span>Responsive cards</span><span>Company colours</span><span>QR sharing</span></div>
+          <label className="template-company-label" htmlFor="template-company">Customize for a company</label>
+          <select id="template-company" className="field" value={companyId} disabled={!loaded || !!error} onChange={(event) => setCompanyId(event.target.value)}>
+            <option value="">Choose a company or branch</option>
+            {companies.map((company) => <option key={company.id} value={company.id}>{companyLabel(company)}</option>)}
+          </select>
+          {companyId ? (
+            <Link className="template-customize" href={`/admin/companies/${companyId}?tab=design`}>Open card designer<Icon name="arrow-right" className="size-4" /></Link>
+          ) : (
+            <button type="button" className="template-customize" disabled>Choose a company to customize<Icon name="arrow-right" className="size-4" /></button>
+          )}
+          <p className="template-studio-note">Preview only. Choose and save the template in the company’s card designer.</p>
+        </div>
+
+        <div className={`template-stage card-page tpl-${active.key}`} style={palette}>
+          <span className="template-stage-caption">Sample card</span>
+          <div className="template-demo-card">
+            <span className="template-demo-brand">Your company</span>
+            <span className="template-demo-avatar"><Icon name="user" className="size-9" /></span>
+            <strong>Your name</strong>
+            <span className="template-demo-role">Job title · Company</span>
+            <span className="template-demo-rule" />
+            <div className="template-demo-actions" aria-hidden="true">
+              <span><Icon name="phone" className="size-4" /></span><span><Icon name="mail" className="size-4" /></span><span><Icon name="globe" className="size-4" /></span><span><Icon name="qr" className="size-4" /></span>
+            </div>
+            <span className="template-demo-save"><Icon name="download" className="size-4" />Save contact</span>
+          </div>
+          <span className="template-stage-footnote">Background preview · {active.label}</span>
+        </div>
+      </section>
+
+      <div className="template-section-heading">
+        <div><h2>Find your signature look</h2><p>{themes.length} backgrounds. One consistent identity across your company.</p></div>
+        <span className="chip">Select a design to preview</span>
+      </div>
+      <div className="template-gallery">
+        {themes.map((theme) => {
           const taken = users(theme.key);
           return (
-            <section key={theme.key} className="surface overflow-hidden">
-              <span
-                aria-hidden="true"
-                className={`card-page tpl-${theme.key} flex h-40 items-center justify-center`}
-                style={paletteStyle(taken[0]?.accents ?? null)}
-              >
-                <span className="surface w-32 p-3 text-center">
-                  <span className="mx-auto block size-9 rounded-full bg-wash" />
-                  <span className="mt-2 block h-1.5 w-20 rounded-full bg-ink/70" />
-                  <span className="mt-1.5 block h-1 w-14 rounded-full bg-line" />
+            <article key={theme.key} className={`template-option ${active.key === theme.key ? "is-selected" : ""}`}>
+              <button type="button" className="template-option-button" aria-label={`Preview ${theme.label} template`} aria-pressed={active.key === theme.key} onClick={() => setSelected(theme.key)}>
+                <span className={`template-option-visual card-page tpl-${theme.key}`} style={paletteStyle(taken[0]?.accents ?? null)}>
+                  <span className="template-mini-card" aria-hidden="true"><span /><strong>Your name</strong><i /><span className="template-mini-actions">● ● ●</span></span>
+                  {active.key === theme.key ? <span className="template-selected-mark"><Icon name="check" className="size-3.5" />Previewing</span> : <span className="template-preview-mark">Preview<Icon name="eye" className="size-3.5" /></span>}
                 </span>
-              </span>
-
-              <div className="p-4">
-                <h2 className="font-display text-base font-bold">{theme.label}</h2>
-                <p className="text-sm text-ink-soft">{theme.hint}</p>
-                {taken.length ? (
-                  <ul className="mt-3 flex flex-wrap gap-1.5">
-                    {taken.map((c) => (
-                      <li key={c.id}>
-                        <Link href={`/admin/companies/${c.id}`} className="chip hover:text-ink">
-                          {companyLabel(c)}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-xs text-ink-soft">Nobody is using this one.</p>
-                )}
+                <span className="template-option-title">{theme.label}</span>
+                <span className="template-option-hint">{theme.hint}</span>
+              </button>
+              <div className="template-option-usage">
+                <span>{!loaded ? "Loading usage…" : taken.length ? `Used by ${taken.length} ${taken.length === 1 ? "branch" : "branches"}` : "Ready for your next card"}</span>
+                {taken.length ? <ul>{taken.map((company) => <li key={company.id}><Link href={`/admin/companies/${company.id}`}>{companyLabel(company)}<Icon name="arrow-right" className="size-3" /></Link></li>)}</ul> : null}
               </div>
-            </section>
+            </article>
           );
         })}
       </div>
 
-      <h2 className="mb-4 mt-10 font-display text-lg font-bold">Type sets</h2>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="template-section-heading">
+        <div><h2>Let your type do the talking</h2><p>Explore the type sets available in your company’s card designer.</p></div>
+      </div>
+      <div className="template-font-grid">
         {FONTS.map((font) => (
-          <section key={font.key} className={`surface p-5 type-${font.key}`}>
-            <p className="font-display text-xl font-bold">{font.label}</p>
-            <p className="mt-1 text-sm">
-              Sarah Johnson · Business Development Manager — and the body copy underneath reads
-              like this.
-            </p>
-            <p className="mt-3 font-sans text-xs text-ink-soft">{font.hint}</p>
-            <ul className="mt-3 flex flex-wrap gap-1.5">
-              {companies
-                .filter((c) => (c.font ?? "poppins") === font.key)
-                .map((c) => (
-                  <li key={c.id}>
-                    <Link href={`/admin/companies/${c.id}`} className="chip hover:text-ink">
-                      {companyLabel(c)}
-                    </Link>
-                  </li>
-                ))}
+          <section key={font.key} className={`template-font-card type-${font.key}`}>
+            <div className="template-font-top"><h3>{font.label}</h3><span aria-hidden="true">Aa</span></div>
+            <p className="template-font-sample">A memorable first impression.</p>
+            <p className="template-font-hint">{font.hint}</p>
+            <ul className="mt-4 flex flex-wrap gap-1.5">
+              {companies.filter((company) => (company.font ?? "poppins") === font.key).map((company) => <li key={company.id}><Link href={`/admin/companies/${company.id}`} className="chip hover:text-ink">{companyLabel(company)}</Link></li>)}
             </ul>
           </section>
         ))}
       </div>
-    </>
+    </div>
   );
 }

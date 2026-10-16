@@ -344,3 +344,80 @@
   .company-directory-filters { flex-basis: 100%; flex-wrap: wrap; }
   .company-directory-search, .company-directory-filters > select { flex: 1 1 100%; max-width: none; }
 }
+
+/* Template studio: luminous details around real company background previews. */
+.template-studio { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); overflow: hidden; border: 1px solid #20434e; border-radius: 1.25rem; background: #0b1d27; color: #edfaff; }
+.template-studio-copy { padding: clamp(1.5rem,3vw,3rem); }
+.template-studio-label { display: inline-flex; align-items: center; gap: 0.6rem; color: #9de5df; font-size: 0.8125rem; font-weight: 600; }
+.template-studio-label > span { width: 6px; height: 6px; border-radius: 50%; background: #8cf6df; box-shadow: 0 0 12px #8cf6df66; }
+.template-studio-copy h2 { margin-top: 1.25rem; font-size: clamp(2rem,3vw,3.5rem); font-weight: 650; line-height: 1.1; letter-spacing: -0.045em; }
+.template-studio-description { margin-top: 0.85rem; max-width: 40ch; color: #a7bdca; font-size: 0.9375rem; line-height: 1.7; }
+.template-studio-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.25rem; }
+.template-studio-tags span { border: 1px solid #2a4653; border-radius: 0.4rem; padding: 0.3rem 0.6rem; color: #c6d9e3; font-size: 0.6875rem; }
+.template-company-label { display: block; margin-top: 2rem; margin-bottom: 0.5rem; color: #d1e4ed; font-size: 0.8125rem; font-weight: 500; }
+.workspace .template-studio select { max-width: 26rem; background: #142d39; border-color: #3c5a69; color: #eefaff; }
+.template-customize { display: flex; width: min(100%,26rem); align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.65rem; padding: 0.8rem 1rem; background: #a0f1df; color: #092b31; border: 1px solid transparent; border-radius: 0.55rem; font-size: 0.8125rem; font-weight: 650; }
+.template-customize:hover { background: #c3ffef; }
+.template-customize:disabled { background: #1d3a43; color: #b4cccf; border-color: #36545a; opacity: 0.8; }
+.template-studio-note { margin-top: 0.85rem; max-width: 48ch; color: #a7bdca; font-size: 0.6875rem; line-height: 1.65; }
+.template-stage { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; min-height: 460px; padding: 2rem; isolation: isolate; }
+.template-stage::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(ellipse at center,transparent 30%,#06151e55 100%); pointer-events: none; }
+.template-stage-caption, .template-stage-footnote { padding: 0.3rem 0.65rem; border: 1px solid #ffffff3d; border-radius: 999px; background: #061a2ae6; color: #d9eef7; font-size: 0.6875rem; }
+.template-demo-card { display: flex; flex-direction: column; align-items: center; width: min(100%,250px); padding: 1.5rem; background: #ffffffed; color: #142936; border: 1px solid white; border-radius: 1rem; box-shadow: 0 20px 50px -20px #001b3b88; }
+.template-demo-brand { color: #536c7d; font-size: 0.6875rem; font-weight: 600; }
+.template-demo-avatar { display: grid; place-items: center; width: 76px; height: 76px; margin: 1.5rem 0 1rem; border: 1px solid #d6e3eb; border-radius: 1.3rem; background: #edf3f8; color: #537a8a; }
+.template-demo-card > strong { font-size: 1.35rem; letter-spacing: -0.03em; }
+.template-demo-role { margin-top: 0.25rem; font-size: 0.6875rem; color: #61717f; }
+.template-demo-rule { width: 30px; height: 3px; margin: 1rem 0; border-radius: 2px; background: var(--accent); }
+.template-demo-actions { display: flex; gap: 0.6rem; }
+.template-demo-actions > span { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #dde8ef; border-radius: 50%; background: white; color: #335d76; }
+.template-demo-save { display: flex; justify-content: center; align-items: center; gap: 0.5rem; width: 100%; margin-top: 1.5rem; padding: 0.6rem; border-radius: 0.5rem; background: #142f40; color: white; font-size: 0.6875rem; font-weight: 600; }
+.template-section-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin: 2.5rem 0 1.2rem; }
+.template-section-heading h2 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.03em; }
+.template-section-heading p { margin-top: 0.3rem; color: var(--color-ink-soft); font-size: 0.8125rem; }
+.template-gallery { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,230px),1fr)); gap: 1rem; }
+.template-option { overflow: hidden; border: 1px solid #dbe5ef; border-radius: 0.85rem; background: #fff; transition: border-color 150ms ease,box-shadow 150ms ease; }
+.template-option.is-selected { border-color: #078b95; box-shadow: 0 0 0 2px #16adbb22; }
+.template-option-button { display: block; width: 100%; padding: 0.5rem 0.5rem 0.85rem; text-align: left; cursor: pointer; border-radius: 0.75rem; }
+.template-option-button:focus-visible { outline-offset: -3px; }
+.template-option-visual { position: relative; display: flex; justify-content: center; align-items: center; height: 190px; overflow: hidden; border-radius: 0.5rem; }
+.template-mini-card { display: flex; flex-direction: column; align-items: center; width: 110px; padding: 1rem 0.8rem; border: 1px solid #fff; border-radius: 0.7rem; background: #ffffffed; color: #142936; box-shadow: 0 12px 24px -10px #00152855; }
+.template-mini-card > span:first-child { width: 32px; height: 32px; margin-bottom: 0.6rem; border-radius: 50%; background: #e4edf3; border: 1px solid #d6e3ed; }
+.template-mini-card strong { font-size: 0.6rem; }
+.template-mini-card > i { width: 40px; height: 3px; margin-top: 0.4rem; background: #d5e3eb; border-radius: 2px; }
+.template-mini-actions { margin-top: 0.6rem; color: #517d91; font-size: 0.5rem; letter-spacing: 0.3em; }
+.template-selected-mark, .template-preview-mark { position: absolute; right: 0.6rem; top: 0.6rem; display: flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.5rem; border-radius: 0.35rem; background: #062833e8; color: #d6fff4; font-size: 0.625rem; font-weight: 600; }
+.template-option-title { display: block; margin: 0.9rem 0.5rem 0; font-size: 0.9375rem; font-weight: 700; }
+.template-option-hint { display: block; margin: 0.15rem 0.5rem 0; color: var(--color-ink-soft); font-size: 0.75rem; }
+.template-option-usage { border-top: 1px solid #edf2f6; padding: 0.75rem 1rem; font-size: 0.6875rem; color: var(--color-ink-soft); }
+.template-option-usage ul { margin-top: 0.5rem; }
+.template-option-usage li + li { margin-top: 0.25rem; }
+.template-option-usage a { display: inline-flex; align-items: center; gap: 0.5rem; color: #087888; font-weight: 600; }
+.template-option-usage a:hover { text-decoration: underline; }
+.template-font-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,260px),1fr)); gap: 1rem; }
+.template-font-card { padding: 1.5rem; border: 1px solid var(--color-line); border-radius: 0.85rem; background: white; }
+.template-font-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.template-font-top h3 { font-size: 0.875rem; font-weight: 600; }
+.template-font-top > span { font-family: var(--font-display); font-size: 2rem; line-height: 1; color: #95b5c4; }
+.template-font-sample { margin-top: 1.5rem; max-width: 20ch; font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; line-height: 1.3; }
+.template-font-hint { margin-top: 1rem; color: var(--color-ink-soft); font-size: 0.75rem; }
+@media (min-width: 1800px) { .template-stage { min-height: 500px; } }
+@media (max-width: 767px) {
+  .template-studio { grid-template-columns: minmax(0,1fr); }
+  .template-stage { min-height: 420px; }
+  .template-studio-copy { padding: 1.5rem; }
+}
+
+/* Single-line form controls share one measured height across the workspace. */
+.workspace { --control-height: 44px; }
+.workspace select,
+.workspace input:not([type='checkbox']):not([type='radio']):not([type='color']):not([type='range']):not([type='file']):not([type='hidden']) {
+  box-sizing: border-box;
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding-block: 10px;
+  line-height: 22px;
+  font-family: inherit;
+  vertical-align: middle;
+}
+.template-demo-save { white-space: nowrap; }

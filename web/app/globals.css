@@ -375,3 +375,12 @@ h3,
 .accent-band {
   background-image: linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent-3) 70%, #04181c));
 }
+
+/* The public card is also embedded at narrow phone-preview widths. */
+.save-contact-action {
+  min-width: max-content;
+  white-space: nowrap;
+  padding-inline: 0.75rem;
+  font-size: 0.875rem;
+  gap: 0.5rem;
+}
