@@ -1383,3 +1383,52 @@ def test_requiring_two_step_leaves_the_door_to_setting_it_up(seeded):
     finally:
         app_settings.put("require_2fa", "0")
         root.post("/api/admin/me/2fa/off", data={"password": "super-secret-pw"})
+
+
+def test_admin_profile_photo_is_validated_and_private(seeded):
+    root = sign_in("root", "super-secret-pw")
+    root.post("/api/admin/users", data={"email": "photo-admin", "password": "photo-password-123"})
+    owner = sign_in("photo-admin", "photo-password-123")
+    anon = TestClient(app)
+    assert anon.get("/api/admin/me/photo").status_code == 401
+    assert anon.put("/api/admin/me/photo").status_code == 401
+    assert owner.get("/api/admin/me/photo").status_code == 404
+    assert owner.put("/api/admin/me/photo").status_code == 422
+    bad = owner.put("/api/admin/me/photo", files={"photo": ("bad.jpg", b"not an image")})
+    assert bad.status_code == 422
+    made = owner.put("/api/admin/me/photo", files={"photo": ("portrait.jpg", jpeg_bytes())})
+    assert made.status_code == 200, made.text
+    url = made.json()["photo_url"]
+    assert owner.get("/api/admin/me").json()["photo_url"] == url
+    image = owner.get(url)
+    assert image.status_code == 200
+    assert image.headers["content-type"] == "image/png"
+    assert image.headers["cache-control"] == "private, no-store"
+    with Image.open(io.BytesIO(image.content)) as decoded:
+        assert max(decoded.size) <= 420
+    assert root.get(url).status_code == 404
+    again = owner.put("/api/admin/me/photo", files={"photo": ("new.jpg", jpeg_bytes())})
+    assert again.status_code == 200
+    assert again.json()["photo_url"] != url
+    invalid = owner.put("/api/admin/me/photo", files={"photo": ("bad.svg", b"<svg/>")})
+    assert invalid.status_code == 422
+    assert len(list(pathlib.Path(os.environ["VCARD_UPLOADS"]).glob("admin-*.png"))) == 1
+    assert owner.get("/api/admin/me").json()["photo_url"] == again.json()["photo_url"]
+
+
+def test_the_mail_region_decides_the_endpoint(seeded):
+    """A token is only good in its own data centre, so the host is settable —
+    but only to one ZeptoMail runs, never to an address of someone's choosing."""
+    from app import mailer
+
+    admin = sign_in("root", "super-secret-pw")
+    assert mailer.endpoint() == "https://api.zeptomail.com/v1.1/email"
+
+    moved = admin.patch("/api/admin/settings", data={"zepto_dc": "api.zeptomail.in"})
+    assert moved.status_code == 200, moved.text
+    assert admin.get("/api/admin/settings").json()["zepto_dc"] == "api.zeptomail.in"
+    assert mailer.endpoint() == "https://api.zeptomail.in/v1.1/email"
+
+    refused = admin.patch("/api/admin/settings", data={"zepto_dc": "api.attacker.example"})
+    assert refused.status_code == 422
+    assert mailer.endpoint() == "https://api.zeptomail.in/v1.1/email"

@@ -16,6 +16,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [failed, setFailed] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const [menuPath, setMenuPath] = useState(pathname);
   if (menuPath !== pathname) {
@@ -36,12 +37,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
+    function refreshProfile() { apiJson<Me>("/api/admin/me").then(setMe).catch(() => {}); }
+    window.addEventListener("admin-profile-updated", refreshProfile);
     apiJson<Me>("/api/admin/me")
       .then(setMe)
       .catch(() => {
         setFailed(true);
         router.replace("/login");
       });
+    return () => window.removeEventListener("admin-profile-updated", refreshProfile);
   }, [router]);
 
   async function signOut() {
@@ -66,11 +70,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="workspace flex min-h-dvh flex-col lg:flex-row">
+    <div data-sidebar-collapsed={collapsed} className="workspace flex min-h-dvh flex-col lg:flex-row">
       <a href="#workspace-content" className="skip-link">Skip to content</a>
       <aside className="workspace-sidebar flex shrink-0 flex-col">
         <div className="flex items-center justify-between gap-4">
-        <Link href="/admin" className="flex items-center gap-3">
+        <Link href="/admin" aria-label="True Star dashboard" className="workspace-brand flex items-center gap-3">
           <Image src="/tbs-logo.png" alt="" width={42} height={40} />
           <span className="font-display text-xl font-bold leading-tight text-white">
             True Star
@@ -80,6 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <button type="button" className="workspace-menu lg:hidden" aria-expanded={menuOpen} aria-controls="workspace-navigation" onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? "Close menu" : "Menu"}<Icon name="grid" className="size-4" /></button>
         </div>
+        <button type="button" className="sidebar-collapse" onClick={() => { setCollapsed((value) => !value); setAccountOpen(false); }} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} aria-controls="workspace-navigation" title={collapsed ? "Expand sidebar" : "Collapse sidebar"}><Icon name="arrow-right" className={`size-4 ${collapsed ? "" : "rotate-180"}`} /><span>Collapse navigation</span></button>
         <nav id="workspace-navigation" aria-label="Main navigation" className={`${menuOpen ? "flex" : "hidden"} workspace-nav mt-6 flex-col gap-1 lg:flex`}>
           {nav.map((item) => {
             // /admin is the dashboard itself, so it only lights on an exact match
@@ -90,6 +95,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
+                aria-label={item.text}
+                title={item.text}
+                data-tooltip={item.text}
                 className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 font-display text-sm font-semibold transition-colors ${
                   active
                     ? "grad-brand shadow-[0_10px_20px_-14px_#2f8ad6]"
@@ -97,18 +105,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 }`}
               >
                 <Icon name={item.icon} className="size-4" />
-                {item.text}
+                <span className="workspace-nav-label">{item.text}</span>
+                <span className="sidebar-tooltip" aria-hidden="true">{item.text}</span>
               </Link>
             );
           })}
         </nav>
 
-        <Link href="/admin/contacts/new" className="workspace-invite hidden lg:block">
-          <span className="workspace-invite-icon"><Icon name="qr" className="size-7" /></span>
-          <strong className="block">A better first impression.</strong>
-          <span className="mt-1 block text-xs">One card. Every way to connect.</span>
-          <span className="mt-4 flex items-center gap-2 text-xs font-semibold text-white">Create a contact card <Icon name="plus" className="size-3.5" /></span>
-        </Link>
+        <Link href="/admin/contacts/new" className="sidebar-create" aria-label="Create a contact card" title="Create a contact card"><Icon name="plus" className="size-4" /><span>Create a contact card</span></Link>
 
         {/* The account, at the foot of the nav: who you are is not a page
             action, and this is where a signed-in name is looked for. */}
@@ -117,10 +121,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             type="button"
             onClick={() => setAccountOpen((v) => !v)}
             aria-expanded={accountOpen}
+            aria-label={`Account menu for ${me.name || me.email}`}
+            title="Your account"
             className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-white/[0.07]"
           >
             <span className="grad-brand flex size-9 shrink-0 items-center justify-center rounded-full font-display text-xs font-bold">
-              {(me.name || me.email).slice(0, 2).toUpperCase()}
+              {me.photo_url ? <Image src={me.photo_url} alt="" width={36} height={36} className="size-full rounded-full object-cover" /> : (me.name || me.email).slice(0, 2).toUpperCase()}
             </span>
             <span className="min-w-0 flex-1 text-xs leading-tight">
               <span className="block truncate font-semibold text-white">
@@ -132,7 +138,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
 
           {accountOpen ? (
-            <div className="surface absolute bottom-full left-0 right-0 z-30 mb-2 p-2">
+            <div className="account-popover surface absolute bottom-full left-0 right-0 z-30 mb-2 p-2">
               <Link
                 href="/admin/profile"
                 onClick={() => setAccountOpen(false)}
@@ -160,10 +166,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar name={me.name || me.email} />
+        <TopBar name={me.name || me.email} photoUrl={me.photo_url} />
         <main id="workspace-content" tabIndex={-1} className="workspace-content min-w-0 flex-1">
           <div className="workspace-page mx-auto max-w-6xl">{children}</div>
         </main>
+        <div className="workspace-status"><span><span className="status-indicator" aria-hidden="true" />Signed in<span className="status-account"> as {me.name || me.email}</span></span><span>Contact cards</span></div>
+        <footer className="workspace-footer">Product by <strong>Kryil Infotech Private Limited.</strong></footer>
       </div>
     </div>
   );

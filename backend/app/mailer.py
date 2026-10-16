@@ -15,8 +15,25 @@ import urllib.request
 
 from . import settings
 
-ENDPOINT = "https://api.zeptomail.com/v1.1/email"
+# ZeptoMail runs one of these per region and each only honours its own tokens.
+# The list is closed on purpose: the host is administrator-settable, and an open
+# one would be a way to make the server post the token wherever it liked.
+HOSTS = (
+    "api.zeptomail.com",
+    "api.zeptomail.in",
+    "api.zeptomail.eu",
+    "api.zeptomail.com.au",
+    "api.zeptomail.ca",
+    "api.zeptomail.jp",
+    "api.zeptomail.sa",
+    "api.zeptomail.com.cn",
+)
 TIMEOUT = 12
+
+
+def endpoint() -> str:
+    host = settings.get("zepto_dc") or HOSTS[0]
+    return f"https://{host if host in HOSTS else HOSTS[0]}/v1.1/email"
 
 
 class MailError(RuntimeError):
@@ -42,8 +59,8 @@ def send(to_address: str, to_name: str, subject: str, html: str, text: str) -> N
         "htmlbody": html,
         "textbody": text,
     }
-    request = urllib.request.Request(  # noqa: S310 - fixed https endpoint
-        ENDPOINT,
+    request = urllib.request.Request(  # noqa: S310 - https, host from a closed list
+        endpoint(),
         data=json.dumps(payload).encode(),
         headers={
             # ZeptoMail's own scheme name, not "Bearer".

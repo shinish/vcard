@@ -17,7 +17,8 @@ type Row = {
   company: string;
   url: string;
   photo_url: string | null;
-  updated_at: string;
+  updated_at: string | null;
+  branch?: string | null;
 };
 
 /** Everyone with a card, across every company. */
@@ -47,7 +48,7 @@ export default function PeoplePage() {
     const needle = term.trim().toLowerCase();
     if (!needle || !rows) return rows ?? [];
     return rows.filter((r) =>
-      [r.first_name, r.last_name, r.job_title, r.org, r.company]
+      [r.first_name, r.last_name, r.job_title, r.org, r.company, r.branch]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
@@ -56,7 +57,7 @@ export default function PeoplePage() {
   }, [rows, term]);
 
   return (
-    <>
+    <div className="people-directory">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold">People</h1>
@@ -70,7 +71,7 @@ export default function PeoplePage() {
           <input
             value={term}
             onChange={(e) => setTerm(e.target.value)}
-            placeholder="Filter by name or job title"
+            placeholder="Search name, role or company"
             aria-label="Filter people"
             className="field w-auto text-sm"
           />
@@ -112,55 +113,38 @@ export default function PeoplePage() {
           </p>
         </div>
       ) : (
-        <div className="surface divide-y divide-line overflow-hidden">
-          {shown.map((row) => (
-            <article key={row.id} className="directory-row flex flex-wrap items-center gap-4 p-5">
-              {row.photo_url ? (
-                // eslint-disable-next-line @next/next/no-img-element -- pre-sized by the API
-                <img
-                  src={row.photo_url}
-                  alt=""
-                  className="size-11 shrink-0 rounded-full border border-line object-cover"
-                />
-              ) : (
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-line font-display text-sm text-ink-soft">
-                  {(row.first_name?.[0] ?? "") + (row.last_name?.[0] ?? "")}
-                </span>
-              )}
-
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-display font-semibold">
-                  {[row.first_name, row.last_name].filter(Boolean).join(" ")}
-                </p>
-                <p className="truncate text-sm text-ink-soft">
-                  {[row.job_title, row.company].filter(Boolean).join(" · ") || "—"}
-                </p>
-              </div>
-
-              <div className="flex shrink-0 gap-2">
-                <button
-                  onClick={() => setShowing(showing === row.id ? null : row.id)}
-                  className="btn"
-                >
-                  Link
-                </button>
-                <Link href={`/admin/contacts/${row.id}`} className="btn">
-                  Open
-                </Link>
-                <Link href={`/admin/contacts/${row.id}/edit`} className="btn">
-                  Edit
-                </Link>
-              </div>
-
-              {showing === row.id ? (
-                <div className="w-full border-t border-line pt-4">
-                  <CopyLink label="Share link" value={row.url} />
-                </div>
-              ) : null}
-            </article>
-          ))}
-        </div>
+        <section className="surface overflow-hidden" aria-label="People directory">
+          <div className="people-columns" aria-hidden="true"><span>Person</span><span>Company / branch</span><span>Updated</span><span>Actions</span></div>
+          <ul className="people-list">
+            {shown.map((row) => {
+              const name = [row.first_name, row.last_name].filter(Boolean).join(" ");
+              const date = row.updated_at ? new Date(row.updated_at) : null;
+              return (
+                <li key={row.id}>
+                  <article className="people-row directory-row">
+                    <Link href={`/admin/contacts/${row.id}`} className="people-identity">
+                      {row.photo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- pre-sized by the API
+                        <img src={row.photo_url} alt="" className="people-avatar" />
+                      ) : <span className="people-avatar">{(row.first_name?.[0] ?? "") + (row.last_name?.[0] ?? "")}</span>}
+                      <span className="min-w-0"><strong className="block truncate">{name}</strong><span className="people-secondary">{row.job_title || "No job title"}</span></span>
+                    </Link>
+                    <span className="min-w-0"><span className="block truncate">{row.company}</span><span className="people-secondary">{row.branch || row.org || "—"}</span></span>
+                    <span className="people-updated">{date && !Number.isNaN(date.getTime()) ? <time dateTime={row.updated_at!}>{date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</time> : "Not updated"}</span>
+                    <div className="people-actions">
+                      <button type="button" onClick={() => setShowing(showing === row.id ? null : row.id)} className="people-action" title="Share link" aria-label={`Share link for ${name}`} aria-expanded={showing === row.id} aria-controls={`person-link-${row.id}`}><Icon name="link" className="size-4" /></button>
+                      <Link href={`/admin/contacts/${row.id}`} className="people-action" title="Open contact" aria-label={`Open ${name}`}><Icon name="eye" className="size-4" /></Link>
+                      <Link href={`/admin/contacts/${row.id}/edit`} className="people-action people-edit" aria-label={`Edit ${name}`}>Edit</Link>
+                    </div>
+                    {showing === row.id ? <div id={`person-link-${row.id}`} className="people-share"><CopyLink label={`Share link for ${name}`} value={row.url} /></div> : null}
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="people-footer" role="status" aria-live="polite">Showing {shown.length} of {rows.length} {rows.length === 1 ? "person" : "people"}</p>
+        </section>
       )}
-    </>
+    </div>
   );
 }

@@ -520,7 +520,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                   >
                     <input
                       type="radio"
-                      name="theme"
+                      name="theme-overview"
                       value={t.key}
                       checked={theme === t.key}
                       onChange={() => setTheme(t.key)}

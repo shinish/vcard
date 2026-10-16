@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import { Icon } from "../../components/icons";
@@ -14,6 +15,9 @@ export default function ProfilePage() {
   const [pwMsg, setPwMsg] = useState<string | null>(null);
   const [pwErr, setPwErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [photoMessage, setPhotoMessage] = useState<string | null>(null);
   const [twoStep, setTwoStep] = useState<TwoStep | null>(null);
   const [enrolling, setEnrolling] = useState<{ secret: string } | null>(null);
   const [codes, setCodes] = useState<string[] | null>(null);
@@ -45,6 +49,27 @@ export default function ProfilePage() {
     }
   }
 
+  async function savePhoto(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    setPhotoBusy(true);
+    setPhotoError(null);
+    setPhotoMessage(null);
+    try {
+      const response = await api("/api/admin/me/photo", { method: "PUT", body: new FormData(form) });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.detail ?? "Could not save your photo.");
+      setMe((current) => current ? { ...current, photo_url: data.photo_url } : current);
+      window.dispatchEvent(new Event("admin-profile-updated"));
+      setPhotoMessage("Profile photo updated.");
+      form.reset();
+    } catch (cause) {
+      setPhotoError((cause as Error).message);
+    } finally {
+      setPhotoBusy(false);
+    }
+  }
+
   async function patch(body: FormData): Promise<Record<string, unknown>> {
     const res = await api("/api/admin/me", { method: "PATCH", body });
     if (!res.ok) {
@@ -62,6 +87,7 @@ export default function ProfilePage() {
     try {
       const saved = await patch(new FormData(event.currentTarget));
       setMe((m) => (m ? { ...m, email: String(saved.email), name: saved.name as string } : m));
+      window.dispatchEvent(new Event("admin-profile-updated"));
       setDetailsMsg("Saved.");
     } catch (cause) {
       setDetailsErr((cause as Error).message);
@@ -109,6 +135,17 @@ export default function ProfilePage() {
         </p>
       </header>
 
+      <form onSubmit={savePhoto} className="profile-photo-panel surface p-6">
+        <div className="profile-photo-preview">{me.photo_url ? <Image src={me.photo_url} alt="Your profile photo" width={88} height={88} className="size-full rounded-full object-cover" /> : <span>{(me.name || me.email).slice(0, 2).toUpperCase()}</span>}</div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-lg font-bold">Profile photo</h2>
+          <p className="mt-1 text-sm text-ink-soft">Shown in your account menu and navigation. PNG, JPG or WebP, up to 12 MB.</p>
+          <label className="mt-4 block text-sm font-semibold">Choose photo<input type="file" name="photo" accept="image/png,image/jpeg,image/webp" required className="mt-2 block max-w-full text-sm font-normal text-ink-soft" /></label>
+          <button type="submit" className="btn btn-primary mt-4" disabled={photoBusy}>{photoBusy ? "Saving photo…" : "Save photo"}</button>
+          {photoError ? <p role="alert" className="mt-3 text-sm">{photoError}</p> : null}
+          {photoMessage ? <p role="status" className="mt-3 text-sm text-ink-soft">{photoMessage}</p> : null}
+        </div>
+      </form>
       <form onSubmit={saveDetails} className="surface mb-7 max-w-xl p-6">
         <h2 className="font-display text-lg font-bold">Details</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">

@@ -261,7 +261,7 @@ export const COMPANY_SWITCHES = [
 ];
 
 /** Every admin spans every company, so there is no role or company here. */
-export type Me = { email: string; name: string | null };
+export type Me = { email: string; name: string | null; photo_url?: string | null };
 
 export type AdminUser = {
   id: number;

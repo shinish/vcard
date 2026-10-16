@@ -12,6 +12,7 @@ type Settings = {
   default_theme: string;
   providers: string[];
   zepto_token_set: boolean;
+  zepto_dc: string;
   mail_from: string;
   mail_from_name: string;
   notify_to: string;
@@ -287,6 +288,24 @@ export default function SettingsPage() {
             ) : null}
             <span className="block text-xs text-ink-soft">
               Stored on the server and never sent back to this page.
+            </span>
+          </label>
+
+          <label className="mt-4 block space-y-1.5 sm:max-w-xs">
+            <span className={labelled}>ZeptoMail region</span>
+            <select name="zepto_dc" defaultValue={data.zepto_dc || "api.zeptomail.com"} className={field}>
+              <option value="api.zeptomail.com">United States — zeptomail.com</option>
+              <option value="api.zeptomail.in">India — zeptomail.in</option>
+              <option value="api.zeptomail.eu">Europe — zeptomail.eu</option>
+              <option value="api.zeptomail.com.au">Australia — zeptomail.com.au</option>
+              <option value="api.zeptomail.ca">Canada — zeptomail.ca</option>
+              <option value="api.zeptomail.jp">Japan — zeptomail.jp</option>
+              <option value="api.zeptomail.sa">Saudi Arabia — zeptomail.sa</option>
+              <option value="api.zeptomail.com.cn">China — zeptomail.com.cn</option>
+            </select>
+            <span className="block text-xs text-ink-soft">
+              The one your Zoho account sits in. A token from another region is refused as
+              invalid, so this has to match.
             </span>
           </label>
 

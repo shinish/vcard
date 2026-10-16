@@ -554,7 +554,50 @@ def logout(response: Response, user: CurrentUser):
 
 @router.get("/me")
 def me(user: CurrentUser):
-    return {"email": user["email"], "name": user["name"]}
+    photo = user["photo_path"]
+    return {
+        "email": user["email"], "name": user["name"],
+        "photo_url": f"/api/admin/me/photo?v={photo}" if photo else None,
+    }
+
+
+@router.get("/me/photo")
+def profile_photo(user: CurrentUser):
+    photo = user["photo_path"]
+    if not photo or not (UPLOADS / photo).is_file():
+        raise HTTPException(404, "No profile photo")
+    return FileResponse(
+        UPLOADS / photo, media_type="image/png",
+        headers={"Cache-Control": "private, no-store"},
+    )
+
+
+@router.put("/me/photo")
+async def upload_profile_photo(request: Request, user: CurrentUser):
+    form = await request.form()
+    upload = form.get("photo")
+    if not isinstance(upload, UploadFile) or not upload.filename:
+        raise HTTPException(422, "Choose a profile photo")
+    raw = await upload.read(photos.MAX_UPLOAD_BYTES + 1)
+    name = f"admin-{user['id']}-{secrets.token_hex(8)}.png"
+    path = UPLOADS / name
+    try:
+        photos.save_logo(raw, path)
+    except photos.BadImage as e:
+        raise HTTPException(422, str(e)) from e
+    try:
+        with connect() as conn:
+            previous = conn.execute(
+                "SELECT photo_path FROM users WHERE id = ?", (user["id"],),
+            ).fetchone()["photo_path"]
+            conn.execute("UPDATE users SET photo_path = ? WHERE id = ?", (name, user["id"]))
+    except Exception:
+        path.unlink(missing_ok=True)
+        raise
+    if previous:
+        with contextlib.suppress(OSError):
+            (UPLOADS / previous).unlink(missing_ok=True)
+    return {"photo_url": f"/api/admin/me/photo?v={name}"}
 
 
 @router.patch("/me")
@@ -1109,6 +1152,12 @@ async def write_settings(request: Request, user: CurrentUser):
     sender_name = str(form.get("mail_from_name") or "").strip()
     if sender_name:
         app_settings.put("mail_from_name", sender_name)
+
+    data_centre = str(form.get("zepto_dc") or "").strip()
+    if data_centre:
+        if data_centre not in mailer.HOSTS:
+            raise HTTPException(422, "That is not one of ZeptoMail's addresses")
+        app_settings.put("zepto_dc", data_centre)
 
     token = str(form.get("zepto_token") or "")
     if str(form.get("clear_zepto_token") or "") == "1":

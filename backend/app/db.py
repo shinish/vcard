@@ -161,6 +161,7 @@ def init() -> None:
             "users",
             {
                 "disabled": "INTEGER NOT NULL DEFAULT 0",
+                "photo_path": "TEXT",
                 "totp_secret": "TEXT",
                 "totp_enabled": "INTEGER NOT NULL DEFAULT 0",
             },

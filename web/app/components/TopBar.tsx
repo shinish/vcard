@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -25,7 +26,7 @@ type Hits = {
  *  Search asks the API on a short delay rather than on every keystroke, and
  *  only from two characters — a one-letter search matches everything.
  */
-export default function TopBar({ name }: { name: string }) {
+export default function TopBar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
   const [term, setTerm] = useState("");
   const [hits, setHits] = useState<Hits | null>(null);
   const [open, setOpen] = useState(false);
@@ -127,7 +128,7 @@ export default function TopBar({ name }: { name: string }) {
       </div>
 
       <Link href="/admin/profile" className="workspace-profile" aria-label={`Your profile: ${name}`}>
-        <span className="workspace-avatar" aria-hidden="true">{name.slice(0, 2).toUpperCase()}</span>
+        <span className="workspace-avatar" aria-hidden="true">{photoUrl ? <Image src={photoUrl} alt="" width={42} height={42} className="size-full rounded-full object-cover" /> : name.slice(0, 2).toUpperCase()}</span>
         <span className="hidden min-w-0 sm:block"><strong className="block truncate">{name}</strong><span className="block text-xs text-ink-soft">Administrator</span></span>
         <Icon name="arrow-right" className="hidden size-3.5 rotate-90 text-ink-soft sm:block" />
       </Link>

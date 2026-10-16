@@ -20,6 +20,9 @@ KEYS = {
     "default_theme": "DEFAULT_THEME",
     # ZeptoMail (Zoho) sends the sign-in codes and password resets.
     "zepto_token": "ZEPTO_TOKEN",
+    # Which ZeptoMail data centre the account lives in: a token issued for one
+    # is refused by the others, which reads as "Invalid API Token".
+    "zepto_dc": "ZEPTO_DC",
     "mail_from": "MAIL_FROM",
     "mail_from_name": "MAIL_FROM_NAME",
     # Who hears about new and changed cards, and which of those to send.
