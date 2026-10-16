@@ -115,7 +115,7 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 CurrentUser = Annotated[sqlite3.Row, Depends(current_user)]
 
 
-# ponytail: the column is still called `email` but now holds any login
+# The column is still called `email` but now holds any login
 # identifier. Renaming it means a migration across five call sites for no
 # behavioural gain; the UI calls it "username or email".
 def valid_identifier(value: str) -> bool:

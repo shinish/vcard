@@ -229,7 +229,7 @@ PROVIDERS = {
 def search(query: str, country: str | None = None, limit: int = 6) -> tuple[dict, ...]:
     """Look up an address. An empty result is normal: the form stays typeable.
 
-    ponytail: lru_cache is the whole rate-limiting story, which is enough for
+    The lru_cache above is the whole rate-limiting story, which is enough for
     a handful of admins. Put a real limiter in front if this ever gets busy.
     """
     query = query.strip()

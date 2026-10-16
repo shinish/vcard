@@ -108,7 +108,7 @@ CREATE INDEX IF NOT EXISTS idx_contacts_company ON contacts(company_id);
 
 -- Phones, emails, addresses and the rest repeat with arbitrary labels on both
 -- iPhone and Android, so they cannot be flat columns.
--- ponytail: address components live in value as JSON rather than a third
+-- Address components live in value as JSON rather than a third
 -- table. Split it out if addresses ever need querying by city.
 CREATE TABLE IF NOT EXISTS contact_fields (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -143,7 +143,7 @@ CREATE INDEX IF NOT EXISTS idx_media_company ON company_media(company_id);
 
 -- What happened on a card. One row per event, so counts and a recent history
 -- both come out of the same table.
--- ponytail: no IP and no country. The address is hashed with a daily salt and
+-- No IP and no country. The address is hashed with a daily salt and
 -- thrown away; a country would need an IP-geolocation provider, which is a
 -- third party this app does not have.
 CREATE TABLE IF NOT EXISTS card_events (

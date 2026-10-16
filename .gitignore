@@ -16,10 +16,6 @@ __pycache__/
 tsconfig.tsbuildinfo
 next-env.d.ts
 
-# Local tool state
-.claude/settings.local.json
-.claude/.headroom_wrap_*
-
 # Local configuration and secrets
 .env
 .env.local

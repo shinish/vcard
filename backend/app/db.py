@@ -1,6 +1,6 @@
 """SQLite access.
 
-ponytail: stdlib sqlite3, no ORM and no migration framework. There are five
+Stdlib sqlite3, no ORM and no migration framework. There are five
 tables now rather than one, which is still comfortably inside what plain SQL
 handles. Ceiling: once schema changes need to preserve production data, this
 wants Alembic (or an equivalent) rather than CREATE TABLE IF NOT EXISTS.

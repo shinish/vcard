@@ -4,7 +4,7 @@ SMTP would need a socket, a TLS handshake and a thread to wait on it; this is
 one JSON POST. The token lives in settings (never returned to the browser) and
 the sender address with it, so neither is baked into a deploy.
 
-ponytail: urllib rather than a client library. One endpoint, one shape.
+Plain urllib rather than a client library. One endpoint, one shape.
 """
 
 from __future__ import annotations
