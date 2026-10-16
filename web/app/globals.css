@@ -395,6 +395,43 @@ h3,
   background-image: linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent-3) 70%, #04181c));
 }
 
+/* The company's own picture as the card's cover, with a scrim over it: white
+   text has to stay readable on a photograph, and the picture is only ever
+   scaled to cover — never stretched — so it prints as sharp as it arrived.
+   --cover is set inline on the band. */
+.accent-band.has-cover {
+  background-image:
+    linear-gradient(180deg, rgb(4 12 18 / 0.3), rgb(4 12 18 / 0.72)),
+    var(--cover);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+/* "Save as PDF" is the browser's own print dialogue, so the print sheet is
+   the PDF: the card alone, without the page behind it or anything to tap. */
+@media print {
+  .no-print,
+  .card-page iframe {
+    display: none !important;
+  }
+  .card-page {
+    min-height: 0;
+    padding: 0;
+    background: #fff;
+  }
+  .card-page::before { display: none; }
+  .card-page > .contact-card {
+    max-width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .accent-band {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
 /* The public card is also embedded at narrow phone-preview widths. */
 .save-contact-action {
   min-width: max-content;

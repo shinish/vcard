@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS companies (
   show_company_name INTEGER NOT NULL DEFAULT 1,
   show_branch    INTEGER NOT NULL DEFAULT 1,
   share_message  TEXT,
+  -- What the company does, in its own words; seeds a new card's note.
+  about          TEXT,
   -- Who hears about this company's own cards, on top of the global address.
   notify_to      TEXT,
   notify_created INTEGER NOT NULL DEFAULT 1,
@@ -150,7 +152,8 @@ CREATE TABLE IF NOT EXISTS card_events (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   contact_id INTEGER NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
   kind       TEXT NOT NULL CHECK (kind IN
-               ('view','save','qr','signature','call','email','website','map','share')),
+               ('view','save','qr','signature','call','email','website','map','share',
+                'pdf','exchange')),
   at         TEXT NOT NULL,
   source     TEXT,            -- 'qr' when the link carried ?s=qr, else a referrer host
   device     TEXT,            -- 'phone', 'tablet' or 'computer', read off the user agent

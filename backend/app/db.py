@@ -57,6 +57,43 @@ def _drop_user_roles(conn: sqlite3.Connection) -> None:
     conn.execute("PRAGMA foreign_keys = ON")
 
 
+def _widen_event_kinds(conn: sqlite3.Connection) -> None:
+    """Let a card report the two newest things done with it: saved as a PDF,
+    and details exchanged.
+
+    The kinds are a CHECK constraint, and SQLite can only change one by
+    rebuilding the table. Row ids are preserved, so the analytics keep adding
+    up across the migration.
+    """
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'card_events'"
+    ).fetchone()
+    if row is None or "'exchange'" in row[0]:
+        return
+    conn.execute("PRAGMA foreign_keys = OFF")
+    conn.executescript(
+        """
+        CREATE TABLE card_events_rebuilt (
+          id         INTEGER PRIMARY KEY AUTOINCREMENT,
+          contact_id INTEGER NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+          kind       TEXT NOT NULL CHECK (kind IN
+                       ('view','save','qr','signature','call','email','website','map','share',
+                        'pdf','exchange')),
+          at         TEXT NOT NULL,
+          source     TEXT,
+          device     TEXT,
+          visitor    TEXT
+        );
+        INSERT INTO card_events_rebuilt (id, contact_id, kind, at, source, device, visitor)
+          SELECT id, contact_id, kind, at, source, device, visitor FROM card_events;
+        DROP TABLE card_events;
+        ALTER TABLE card_events_rebuilt RENAME TO card_events;
+        CREATE INDEX IF NOT EXISTS idx_events_contact ON card_events(contact_id, at);
+        """
+    )
+    conn.execute("PRAGMA foreign_keys = ON")
+
+
 def _add_missing_columns(conn: sqlite3.Connection, table: str, columns: dict[str, str]) -> None:
     """Bring an existing table up to the current schema without losing rows."""
     present = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
@@ -149,6 +186,7 @@ def init() -> None:
                 "show_company_name": "INTEGER NOT NULL DEFAULT 1",
                 "show_branch": "INTEGER NOT NULL DEFAULT 1",
                 "share_message": "TEXT",
+                "about": "TEXT",
                 "notify_to": "TEXT",
                 "notify_created": "INTEGER NOT NULL DEFAULT 1",
                 "notify_updated": "INTEGER NOT NULL DEFAULT 0",
@@ -168,6 +206,7 @@ def init() -> None:
         )
         _add_missing_columns(conn, "sessions", {"pending_2fa": "INTEGER NOT NULL DEFAULT 0"})
         _add_missing_columns(conn, "card_events", {"device": "TEXT", "visitor": "TEXT"})
+        _widen_event_kinds(conn)
         _add_missing_columns(
             conn,
             "contacts",

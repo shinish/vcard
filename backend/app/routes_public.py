@@ -5,13 +5,14 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
+from html import escape
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, Response
 
-from . import qr, signature, vcf
+from . import mailer, qr, signature, vcf
 from . import settings as app_settings
 from .config import UPLOADS, public_base_url
 from .contacts import field_rows, serialise
@@ -23,7 +24,13 @@ router = APIRouter(prefix="/api/public", tags=["public"])
 # stored: this endpoint is open to the internet.
 EVENT_KINDS = (
     "view", "save", "qr", "signature", "call", "email", "website", "map", "share",
+    "pdf", "exchange",
 )
+
+# An open endpoint that sends email is an open relay unless it is capped. One
+# card cannot post more than this many exchanges in an hour; the count is the
+# card's own event log, so there is nothing else to keep.
+EXCHANGE_PER_HOUR = 20
 
 
 def device_of(agent: str) -> str:
@@ -156,6 +163,87 @@ async def log_event(public_id: str, request: Request):
         request=request,
     )
     return Response(status_code=204)
+
+
+def exchange_recipient(row, fields: list[dict]) -> tuple[str, str]:
+    """Who hears about a visitor who left their details, and under what name.
+
+    The card holder's own email address first — it is their card. A company
+    that named a notification address is next, and the global one last, so a
+    card with no email on it still reaches somebody.
+    """
+    for field in fields:
+        if field["kind"] == "email" and str(field["value"] or "").strip():
+            name = " ".join(p for p in (row["first_name"], row["last_name"]) if p)
+            return str(field["value"]).strip(), name
+    with connect() as conn:
+        company = conn.execute(
+            "SELECT notify_to FROM companies WHERE id = ?", (row["company_id"],)
+        ).fetchone()
+    if company and (company["notify_to"] or "").strip():
+        return company["notify_to"].strip(), row["company_name"]
+    return app_settings.get("notify_to").strip(), row["company_name"]
+
+
+@router.post("/{public_id}/exchange", status_code=202)
+async def exchange_contact(public_id: str, request: Request):
+    """A visitor hands their own details back to whoever the card belongs to.
+
+    Open to the internet, like the card itself, so everything it accepts is
+    length-capped, the address has to look like one, and a card can only send
+    so many of these an hour.
+    """
+    row, fields = fetch(public_id)
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(422, "Expected an object")
+
+    def field(key: str, limit: int) -> str:
+        return " ".join(str(body.get(key) or "").split())[:limit]
+
+    name = field("name", 80)
+    email = field("email", 120)
+    phone = field("phone", 40)
+    message = field("message", 600)
+    if not name:
+        raise HTTPException(422, "Please give your name")
+    if "@" not in email or "." not in email.split("@")[-1]:
+        raise HTTPException(422, "Please give an email address we can reply to")
+
+    if not mailer.configured():
+        raise HTTPException(503, "This card cannot take messages yet")
+
+    hour_ago = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+    with connect() as conn:
+        recent = conn.execute(
+            "SELECT COUNT(*) AS n FROM card_events "
+            "WHERE contact_id = ? AND kind = 'exchange' AND at >= ?",
+            (row["id"], hour_ago),
+        ).fetchone()["n"]
+    if recent >= EXCHANGE_PER_HOUR:
+        raise HTTPException(429, "Too many messages from this card just now. Try again later.")
+
+    to_address, to_name = exchange_recipient(row, fields)
+    if not to_address:
+        raise HTTPException(503, "This card cannot take messages yet")
+
+    card = " ".join(p for p in (row["first_name"], row["last_name"]) if p) or public_id
+    lines = [
+        f"{name} left their details on your card.",
+        f"Email: {email}",
+        *([f"Phone: {phone}"] if phone else []),
+        *([f"Message: {message}"] if message else []),
+        f"Card: {public_base_url()}/user/{public_id}",
+    ]
+    html = "".join(f'<p style="font:15px Arial">{escape(line)}</p>' for line in lines)
+    try:
+        mailer.send(to_address, to_name, f"{name} shared their details ({card})", html,
+                    "\n".join(lines))
+    except mailer.MailError as e:
+        raise HTTPException(502, "Could not send it just now. Please try again.") from e
+
+    record(row["id"], "exchange", request=request)
+    return Response(status_code=202)
 
 
 @router.get("/{public_id}/qr.svg")
@@ -358,6 +446,8 @@ def get_card(public_id: str, request: Request, s: str | None = None):
         "show_name": bool(row["company_show_name"]),
         "show_branch": bool(row["company_show_branch"]),
         "share_message": row["company_share_message"] or None,
+        # The exchange form only appears where it can actually send.
+        "allow_exchange": mailer.configured(),
         "media": showcase(row["company_id"], public_id),
     }
     out["photo_url"] = f"/api/public/{public_id}/photo.jpg" if row["photo_path"] else None

@@ -67,6 +67,7 @@ const TABS: { key: string; text: string; icon: IconName }[] = [
 const EDITS = ["overview", "branding", "design"];
 
 const DETAIL_LABELS: Record<(typeof COMPANY_DETAILS)[number], string> = {
+  about: "About us",
   phone: "Phone number",
   email: "Business email",
   website: "Website",
@@ -424,6 +425,24 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                   />
                 ) : null}
               </div>
+
+              {/* What the company does, in its own words. It seeds a new
+                  card's note, like the rest of these details, and shows on
+                  the card under About. */}
+              <label className="block space-y-1.5">
+                <span className="text-sm font-semibold text-ink-soft">{DETAIL_LABELS.about}</span>
+                <textarea
+                  name="about"
+                  rows={4}
+                  defaultValue={company?.about ?? ""}
+                  placeholder="Wide-format printing, signage and fit-out, across Oman since 2009."
+                  className="field"
+                />
+                <span className="block text-xs text-ink-soft">
+                  A new card starts from this. Editing it later does not rewrite cards that
+                  already exist.
+                </span>
+              </label>
 
               {/* The logo belongs with the details a card is built from, not
                   on a tab of its own. The same picker, the same form. */}

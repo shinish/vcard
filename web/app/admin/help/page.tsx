@@ -101,7 +101,7 @@ export default function HelpPage() {
         </section>
         <aside className="help-shortcuts surface">
           <span className="tile-icon size-10"><Icon name="help" className="size-5" /></span>
-          <h2>Contact True Star</h2>
+          <h2>Contact TrueTap</h2>
           <p>Need a hand? Contact our team.</p>
           <a href="tel:+96891232596"><Icon name="phone" className="size-4" />+968 91232596</a>
           <a href="tel:+96890743018"><Icon name="phone" className="size-4" />+968 90743018</a>

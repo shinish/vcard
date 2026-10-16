@@ -139,11 +139,8 @@ export default function LoginPage() {
         />
         <div className="relative w-full max-w-[24rem] rounded-2xl bg-paper/95 p-7 shadow-lift backdrop-blur-md sm:p-8">
           <div className="text-center">
-            <Image src="/tbs-logo.png" alt="" width={58} height={55} priority className="mx-auto" />
-            <p className="mt-3 font-display text-[1.65rem] font-bold leading-none text-[#15365c]">
-              True Star
-            </p>
-            <p className="mt-1.5 font-display text-sm font-semibold text-brand-ink">
+            <Image src="/truetap-logo.png" alt="TrueTap" width={196} height={54} priority className="mx-auto" />
+            <p className="mt-3 font-display text-sm font-semibold text-brand-ink">
               Contact cards
             </p>
           </div>
@@ -387,7 +384,7 @@ export default function LoginPage() {
           </p>
 
           <p className="mt-10 text-center text-xs text-ink-soft">
-            © {new Date().getFullYear()} True Star Business Solutions
+            © {new Date().getFullYear()} truestar business solution
           </p>
         </div>
       </section>

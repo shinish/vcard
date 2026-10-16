@@ -1432,3 +1432,48 @@ def test_the_mail_region_decides_the_endpoint(seeded):
     refused = admin.patch("/api/admin/settings", data={"zepto_dc": "api.attacker.example"})
     assert refused.status_code == 422
     assert mailer.endpoint() == "https://api.zeptomail.in/v1.1/email"
+
+
+def test_exchange_sends_the_visitor_to_the_card_holder(seeded, monkeypatch):
+    """The form on a card is open to the internet: it has to validate what it
+    is given, reach the card holder's own address, and refuse to be used as a
+    way of posting mail at somebody all afternoon."""
+    from app import mailer, routes_public
+
+    admin = sign_in("root", "super-secret-pw")
+    made = admin.post(
+        "/api/admin/contacts",
+        data={
+            "first_name": "Omar",
+            "last_name": "Said",
+            "company_id": seeded["Globex"],
+            "fields": '[{"kind":"email","label":"work","value":"omar@globex.test"}]',
+        },
+    )
+    assert made.status_code == 201, made.text
+    public_id = made.json()["public_id"]
+
+    sent: list[tuple] = []
+    monkeypatch.setattr(mailer, "configured", lambda: True)
+    monkeypatch.setattr(mailer, "send", lambda *args: sent.append(args))
+
+    anon = TestClient(app)
+    url = f"/api/public/{public_id}/exchange"
+    assert anon.post(url, json={"name": "", "email": "lead@buyer.test"}).status_code == 422
+    assert anon.post(url, json={"name": "Lead", "email": "not-an-address"}).status_code == 422
+    assert not sent, "nothing should have been sent for a request that was refused"
+
+    good = anon.post(url, json={"name": "Lead Buyer", "email": "lead@buyer.test",
+                                "phone": "+968 9000 0000", "message": "Call me Tuesday"})
+    assert good.status_code == 202, good.text
+    assert len(sent) == 1
+    to_address, _, subject, _, text = sent[0]
+    assert to_address == "omar@globex.test", "the card holder's own address comes first"
+    assert "Lead Buyer" in subject
+    assert "lead@buyer.test" in text and "Call me Tuesday" in text
+
+    # The hourly cap counts the card's own exchange events.
+    for _ in range(routes_public.EXCHANGE_PER_HOUR):
+        anon.post(url, json={"name": "Lead Buyer", "email": "lead@buyer.test"})
+    capped = anon.post(url, json={"name": "Lead Buyer", "email": "lead@buyer.test"})
+    assert capped.status_code == 429

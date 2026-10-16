@@ -122,7 +122,7 @@ export default function DashboardPage() {
             Welcome back{first ? `, ${first}` : ""}
           </h1>
           <p className="mt-1 text-sm text-ink-soft">
-            What the True Star contact cards have been doing {days === 1 ? "today" : `over ${days} days`}.
+            What the TrueTap contact cards have been doing {days === 1 ? "today" : `over ${days} days`}.
           </p>
         </div>
 

@@ -33,6 +33,17 @@ type Strings = {
   shareCard: string;
   linkCopied: string;
   copyLink: string;
+  savePdf: string;
+  exchange: string;
+  exchangeIntro: string;
+  yourName: string;
+  yourEmail: string;
+  yourPhone: string;
+  yourMessage: string;
+  sendDetails: string;
+  sending: string;
+  exchangeSent: string;
+  exchangeFailed: string;
   about: string;
   showcase: string;
   details: string;
@@ -62,6 +73,17 @@ const UI: Record<Language, Strings> = {
     shareCard: "Share this card",
     linkCopied: "Link copied",
     copyLink: "Copy link",
+    savePdf: "Save as PDF",
+    exchange: "Exchange contact",
+    exchangeIntro: "Leave your details and they go straight to this inbox.",
+    yourName: "Your name",
+    yourEmail: "Your email",
+    yourPhone: "Your phone",
+    yourMessage: "Message (optional)",
+    sendDetails: "Send my details",
+    sending: "Sending…",
+    exchangeSent: "Sent. Thank you.",
+    exchangeFailed: "Could not send it. Please try again.",
     about: "About",
     showcase: "What we do",
     details: "Contact details",
@@ -89,6 +111,17 @@ const UI: Record<Language, Strings> = {
     shareCard: "شارك هذه البطاقة",
     linkCopied: "تم نسخ الرابط",
     copyLink: "نسخ الرابط",
+    savePdf: "حفظ بصيغة PDF",
+    exchange: "تبادل جهة الاتصال",
+    exchangeIntro: "اترك بياناتك لتصل مباشرة إلى صاحب البطاقة.",
+    yourName: "اسمك",
+    yourEmail: "بريدك الإلكتروني",
+    yourPhone: "هاتفك",
+    yourMessage: "رسالة (اختياري)",
+    sendDetails: "أرسل بياناتي",
+    sending: "جارٍ الإرسال…",
+    exchangeSent: "تم الإرسال. شكرًا لك.",
+    exchangeFailed: "تعذّر الإرسال. حاول مرة أخرى.",
     about: "نبذة",
     showcase: "ما نقدمه",
     details: "بيانات الاتصال",
@@ -116,6 +149,17 @@ const UI: Record<Language, Strings> = {
     shareCard: "Diese Karte teilen",
     linkCopied: "Link kopiert",
     copyLink: "Link kopieren",
+    savePdf: "Als PDF speichern",
+    exchange: "Kontakt austauschen",
+    exchangeIntro: "Hinterlassen Sie Ihre Daten – sie gehen direkt an dieses Postfach.",
+    yourName: "Ihr Name",
+    yourEmail: "Ihre E-Mail",
+    yourPhone: "Ihr Telefon",
+    yourMessage: "Nachricht (optional)",
+    sendDetails: "Meine Daten senden",
+    sending: "Senden…",
+    exchangeSent: "Gesendet. Vielen Dank.",
+    exchangeFailed: "Konnte nicht gesendet werden. Bitte erneut versuchen.",
     about: "Über",
     showcase: "Was wir machen",
     details: "Kontaktdaten",
@@ -143,6 +187,17 @@ const UI: Record<Language, Strings> = {
     shareCard: "Partager cette carte",
     linkCopied: "Lien copié",
     copyLink: "Copier le lien",
+    savePdf: "Enregistrer en PDF",
+    exchange: "Échanger les coordonnées",
+    exchangeIntro: "Laissez vos coordonnées, elles arrivent directement dans cette boîte.",
+    yourName: "Votre nom",
+    yourEmail: "Votre e-mail",
+    yourPhone: "Votre téléphone",
+    yourMessage: "Message (facultatif)",
+    sendDetails: "Envoyer mes coordonnées",
+    sending: "Envoi…",
+    exchangeSent: "Envoyé. Merci.",
+    exchangeFailed: "Impossible d’envoyer. Réessayez.",
     about: "À propos",
     showcase: "Ce que nous faisons",
     details: "Coordonnées",

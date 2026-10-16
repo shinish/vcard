@@ -34,6 +34,8 @@ WORDS = {
     "website": "Website",
     "map": "Map or directions",
     "share": "Shared",
+    "pdf": "Saved as PDF",
+    "exchange": "Details exchanged",
 }
 
 COUNTS = (

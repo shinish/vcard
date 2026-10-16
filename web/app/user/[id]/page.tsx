@@ -3,6 +3,8 @@ import { splitDial } from "../../lib/countries";
 
 import CardActions, { type Action } from "../../components/CardActions";
 import CardLanguage from "../../components/CardLanguage";
+import CardShare from "../../components/CardShare";
+import ExchangeContact from "../../components/ExchangeContact";
 import { Icon, type IconName, SocialMark, socialOf } from "../../components/icons";
 import {
   DEFAULT_LANGUAGE,
@@ -157,6 +159,7 @@ export default async function CardPage({
     show_name: showName,
     show_branch: showBranch,
     share_message: shareMessage,
+    allow_exchange: allowExchange,
     media,
   } = card.company;
 
@@ -214,22 +217,43 @@ export default async function CardPage({
       }}
     >
       <article className="contact-card relative flex w-full flex-col bg-paper lg:max-w-lg lg:rounded-2xl lg:shadow-[var(--shadow-lift)]">
-        {/* Header band: the company's colours, the logo and the language pick. */}
-        <header className="accent-band px-6 pb-20 pt-5 text-white lg:rounded-t-2xl">
-          <div className={`flex items-center gap-3 ${logoBand ? "justify-between" : "justify-end"}`}>
-            {logoBand ? (
-              <div className={`flex min-w-0 flex-1 ${align}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- served by the API */}
-                <img
-                  src={`${API}${logoUrl}`}
-                  alt={card.company.name}
-                  style={{ height: logoHeight }}
-                  className="w-auto max-w-[60%] object-contain"
-                />
-              </div>
-            ) : null}
+        {/* Header band: the company's colours — or its own picture as a cover —
+            with the bar that shares or prints the card, and the logo on a line
+            of its own so a centred logo is centred on the band and not in
+            whatever room the bar leaves it. */}
+        <header
+          className={`accent-band px-6 pb-20 pt-5 text-white lg:rounded-t-2xl${
+            wallpaperUrl ? " has-cover" : ""
+          }`}
+          style={
+            wallpaperUrl
+              ? ({ "--cover": `url(${API}${wallpaperUrl})` } as React.CSSProperties)
+              : undefined
+          }
+        >
+          <div className="no-print flex items-center justify-between gap-3">
+            <CardShare
+              publicId={card.public_id}
+              shareUrl={`/user/${card.public_id}`}
+              qrUrl={`${API}/api/public/${card.public_id}/qr.png`}
+              shareLabel={words.share}
+              copiedLabel={words.linkCopied}
+              pdfLabel={words.savePdf}
+              shareMessage={shareMessage}
+            />
             <CardLanguage current={lang} label={words.chooseLanguage} />
           </div>
+          {logoBand ? (
+            <div className={`mt-4 flex ${align}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- served by the API */}
+              <img
+                src={`${API}${logoUrl}`}
+                alt={card.company.name}
+                style={{ height: logoHeight }}
+                className="w-auto max-w-[60%] object-contain"
+              />
+            </div>
+          ) : null}
         </header>
 
         {logoSide ? (
@@ -250,53 +274,68 @@ export default async function CardPage({
         ) : null}
 
         <div className="relative z-10 -mt-16 flex flex-1 flex-col gap-7 px-6 pb-10">
-          {/* Who this is */}
-          <section className="text-center">
+          {/* Who this is: the photo at the size a face needs, then the name,
+              the job title and the company, aligned to the margin. */}
+          <section className="text-start">
             {card.photo_url ? (
               // eslint-disable-next-line @next/next/no-img-element -- served pre-sized by the API
               <img
                 src={`${API}${card.photo_url}`}
                 alt={name}
-                width={128}
-                height={128}
-                className="mx-auto size-24 shrink-0 rounded-lg border-4 border-paper object-cover object-center shadow-[var(--shadow-soft)]"
+                width={160}
+                height={160}
+                className="size-36 shrink-0 rounded-lg border-4 border-paper object-cover object-center shadow-[var(--shadow-soft)]"
               />
             ) : (
               <p
                 aria-hidden="true"
-                className="mx-auto flex size-24 shrink-0 items-center justify-center rounded-lg border-4 border-paper bg-wash font-display text-3xl text-ink-soft shadow-[var(--shadow-soft)]"
+                className="flex size-36 shrink-0 items-center justify-center rounded-lg border-4 border-paper bg-wash font-display text-4xl text-ink-soft shadow-[var(--shadow-soft)]"
               >
                 {initials(card)}
               </p>
             )}
 
-            <h1 className="mt-4 font-display text-[1.7rem] font-bold leading-tight">{name}</h1>
+            <h1 className="mt-4 font-display text-[2rem] font-bold leading-tight">{name}</h1>
             {card.job_title ? (
-              <p className="mt-1 text-sm font-semibold text-ink-soft">{card.job_title}</p>
+              <p className="mt-1 text-[0.95rem] font-semibold text-ink-soft">{card.job_title}</p>
             ) : null}
             {card.org || (showName && card.company.name) ? (
-              <p className="text-sm text-ink-soft">{card.org || card.company.name}</p>
+              <p className="mt-0.5 text-base font-semibold text-ink">
+                {card.org || card.company.name}
+              </p>
             ) : null}
             {showBranch && card.company.branch ? (
               <p className="mt-1 text-xs text-ink-soft">{card.company.branch}</p>
             ) : null}
-            <span aria-hidden="true" className="accent-rule mx-auto mt-4 block h-1 w-12 rounded-full" />
+            <span aria-hidden="true" className="accent-rule me-auto mt-4 block h-1 w-12 rounded-full" />
           </section>
 
           <CardActions
             publicId={card.public_id}
             vcfUrl={`${API}${card.vcf_url}`}
-            shareUrl={`/user/${card.public_id}`}
             actions={actions}
             saveLabel={words.saveContact}
             doneLabel={words.downloaded(card.first_name ?? name)}
-            shareLabel={words.shareCard}
-            copiedLabel={words.linkCopied}
             allowSave={allowSave}
             requireConsent={requireConsent}
             consentLabel={words.consent}
-            shareMessage={shareMessage}
           />
+
+          {allowExchange ? (
+            <ExchangeContact
+              publicId={card.public_id}
+              title={words.exchange}
+              intro={words.exchangeIntro}
+              nameLabel={words.yourName}
+              emailLabel={words.yourEmail}
+              phoneLabel={words.yourPhone}
+              messageLabel={words.yourMessage}
+              sendLabel={words.sendDetails}
+              sendingLabel={words.sending}
+              sentLabel={words.exchangeSent}
+              failedLabel={words.exchangeFailed}
+            />
+          ) : null}
 
           {allowSave ? null : (
             <p className="text-center text-xs text-ink-soft">{words.savingOff}</p>
@@ -470,7 +509,7 @@ export default async function CardPage({
           ) : null}
 
           {logoFoot ? (
-            <div className={`mt-auto flex ${align}`}>
+            <div className={`flex ${align}`}>
               {/* eslint-disable-next-line @next/next/no-img-element -- served by the API */}
               <img
                 src={`${API}${logoUrl}`}
@@ -480,6 +519,10 @@ export default async function CardPage({
               />
             </div>
           ) : null}
+
+          <p className="mt-auto pt-2 text-center text-[11px] text-ink-soft">
+            TrueTap · truestar business solution
+          </p>
         </div>
       </article>
     </main>

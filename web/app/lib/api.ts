@@ -93,6 +93,7 @@ export type Contact = Record<SingleField, string | null> & {
     show_name: boolean;
     show_branch: boolean;
     share_message: string | null;
+    allow_exchange: boolean;
     media: Media[];
   };
 };
@@ -182,6 +183,7 @@ export function paletteStyle(accents: string[] | null | undefined) {
 }
 
 export const COMPANY_DETAILS = [
+  "about",
   "phone",
   "email",
   "website",

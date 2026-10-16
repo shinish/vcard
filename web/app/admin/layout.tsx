@@ -91,10 +91,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <a href="#workspace-content" className="skip-link">Skip to content</a>
       <aside className="workspace-sidebar flex shrink-0 flex-col">
         <div className="flex items-center justify-between gap-4">
-        <Link href="/admin" aria-label="True Star dashboard" className="workspace-brand flex items-center gap-3">
-          <Image src="/tbs-logo.png" alt="" width={42} height={40} />
+        <Link href="/admin" aria-label="TrueTap dashboard" className="workspace-brand flex items-center gap-3">
+          <Image src="/truetap-logo.png" alt="TrueTap" width={124} height={34} />
           <span className="font-display text-xl font-bold leading-tight text-white">
-            <span className="brand-engraved">True Star</span>
+            <span className="brand-engraved sr-only">TrueTap</span>
             <span className="block text-xs font-medium text-cyan">Contact cards</span>
           </span>
         </Link>

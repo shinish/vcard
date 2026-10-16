@@ -359,10 +359,14 @@ export default function ContactForm({
           />
           <label className="block space-y-1.5">
             <span className={labelled}>Note</span>
+            {/* A new card starts from what the company says about itself;
+                an existing one keeps whatever was written on it. The key
+                re-seeds the box when the company is switched. */}
             <textarea
+              key={contact ? "own" : `company-${chosen?.id ?? "none"}`}
               name="note"
               rows={3}
-              defaultValue={(contact?.note as string) ?? ""}
+              defaultValue={(contact?.note as string) ?? (contact ? "" : chosen?.about ?? "")}
               className={input}
             />
           </label>

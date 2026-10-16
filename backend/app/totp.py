@@ -54,7 +54,7 @@ def verify(secret: str, code: str) -> bool:
     )
 
 
-def uri(secret: str, account: str, issuer: str = "True Star cards") -> str:
+def uri(secret: str, account: str, issuer: str = "TrueTap cards") -> str:
     """The otpauth:// URL behind the enrolment QR code."""
     label = quote(f"{issuer}:{account}", safe="")
     return (

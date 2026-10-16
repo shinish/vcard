@@ -476,7 +476,9 @@
 
 /* Compact, collapsible navigation with keyboard-accessible tooltips. */
 .workspace-sidebar { background: #10232e; border-right: 1px solid #203743; }
-.workspace-brand img { width: 34px; height: auto; flex-shrink: 0; }
+/* A wordmark, so it is sized by height and shrinks to whatever the rail
+   leaves it when the sidebar is collapsed. */
+.workspace-brand img { height: 34px; width: auto; max-width: 100%; flex-shrink: 1; }
 .workspace-brand > span { font-size: 1.05rem; }
 .sidebar-collapse { display: none; }
 .sidebar-tooltip { display: none; }

@@ -43,6 +43,7 @@ ADDRESS_COORDS = ("lat", "lon")
 
 # A company's own contact details, used to seed a new contact's fields.
 COMPANY_DETAILS = (
+    "about",
     "phone",
     "email",
     "website",
