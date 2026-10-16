@@ -15,6 +15,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [me, setMe] = useState<Me | null>(null);
   const [failed, setFailed] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const [menuPath, setMenuPath] = useState(pathname);
+  if (menuPath !== pathname) {
+    setMenuPath(pathname);
+    setMenuOpen(false);
+    setAccountOpen(false);
+  }
+
+  useEffect(() => {
+    function close(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        setAccountOpen(false);
+      }
+    }
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, []);
 
   useEffect(() => {
     apiJson<Me>("/api/admin/me")
@@ -32,7 +51,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (failed) return null;
   if (!me) {
-    return <main className="p-10 text-ink-soft">Loading…</main>;
+    return <main className="workspace-loading" role="status"><span className="workspace-loader" />Opening your workspace…</main>;
   }
 
   const nav: { href: string; text: string; icon: IconName }[] = [
@@ -47,21 +66,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="flex min-h-dvh flex-col sm:flex-row">
-      <aside className="grad-shell flex shrink-0 flex-col px-4 py-4 sm:w-[16.5rem] sm:py-6">
+    <div className="workspace flex min-h-dvh flex-col lg:flex-row">
+      <a href="#workspace-content" className="skip-link">Skip to content</a>
+      <aside className="workspace-sidebar flex shrink-0 flex-col">
+        <div className="flex items-center justify-between gap-4">
         <Link href="/admin" className="flex items-center gap-3">
-          <Image src="/tbs-logo.png" alt="" width={34} height={32} />
-          <span className="font-display text-sm font-bold leading-tight text-white">
+          <Image src="/tbs-logo.png" alt="" width={42} height={40} />
+          <span className="font-display text-xl font-bold leading-tight text-white">
             True Star
             <span className="block text-xs font-medium text-cyan">Contact cards</span>
           </span>
         </Link>
 
-        <nav className="mt-4 flex flex-wrap gap-1.5 sm:mt-8 sm:flex-col">
+        <button type="button" className="workspace-menu lg:hidden" aria-expanded={menuOpen} aria-controls="workspace-navigation" onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? "Close menu" : "Menu"}<Icon name="grid" className="size-4" /></button>
+        </div>
+        <nav id="workspace-navigation" aria-label="Main navigation" className={`${menuOpen ? "flex" : "hidden"} workspace-nav mt-6 flex-col gap-1 lg:flex`}>
           {nav.map((item) => {
             // /admin is the dashboard itself, so it only lights on an exact match
             const active =
-              item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+              item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href) || (item.href === "/admin/people" && pathname.startsWith("/admin/contacts"));
             return (
               <Link
                 key={item.href}
@@ -80,9 +103,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
+        <Link href="/admin/contacts/new" className="workspace-invite hidden lg:block">
+          <span className="workspace-invite-icon"><Icon name="qr" className="size-7" /></span>
+          <strong className="block">A better first impression.</strong>
+          <span className="mt-1 block text-xs">One card. Every way to connect.</span>
+          <span className="mt-4 flex items-center gap-2 text-xs font-semibold text-white">Create a contact card <Icon name="plus" className="size-3.5" /></span>
+        </Link>
+
         {/* The account, at the foot of the nav: who you are is not a page
             action, and this is where a signed-in name is looked for. */}
-        <div className="relative mt-4 border-t border-white/10 pt-3 sm:mt-auto">
+        <div className={`${menuOpen ? "block" : "hidden"} workspace-account relative mt-6 border-t border-white/10 pt-4 lg:mt-auto lg:block`}>
           <button
             type="button"
             onClick={() => setAccountOpen((v) => !v)}
@@ -130,9 +160,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar />
-        <main className="min-w-0 flex-1 px-5 py-8 sm:px-9">
-          <div className="mx-auto max-w-6xl">{children}</div>
+        <TopBar name={me.name || me.email} />
+        <main id="workspace-content" tabIndex={-1} className="workspace-content min-w-0 flex-1">
+          <div className="workspace-page mx-auto max-w-6xl">{children}</div>
         </main>
       </div>
     </div>

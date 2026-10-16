@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import CreatedPanel from "../../components/CreatedPanel";
-import { type AdminUser, type Company, api, apiJson } from "../../lib/api";
+import { type AdminUser, api, apiJson } from "../../lib/api";
 
 type UserRow = AdminUser;
 
@@ -18,7 +18,6 @@ function strongPassword() {
 
 export default function UsersPage() {
   const [rows, setRows] = useState<UserRow[] | null>(null);
-  const [companies, setCompanies] = useState<Company[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [made, setMade] = useState<Made | null>(null);
@@ -34,7 +33,6 @@ export default function UsersPage() {
   }
   useEffect(() => {
     load();
-    apiJson<Company[]>("/api/admin/companies").then(setCompanies).catch(() => {});
     apiJson<{ email: string }>("/api/admin/me").then((m) => setMe(m.email)).catch(() => {});
   }, []);
 
@@ -91,13 +89,13 @@ export default function UsersPage() {
   return (
     <>
       <header className="mb-7">
-        <h1 className="font-display text-2xl font-bold">Users</h1>
+        <h1 className="font-display text-2xl font-bold">Administrators</h1>
         <p className="mt-1 text-sm text-ink-soft">
           Every administrator manages every company, and can reset the others&rsquo; passwords.
         </p>
       </header>
 
-      <form onSubmit={submit} className="mb-8 max-w-xl border border-line bg-paper p-6">
+      <form onSubmit={submit} className="surface mb-8 max-w-xl p-6">
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block space-y-1.5">
               <span className="text-sm font-semibold text-ink-soft">Username or email</span>
@@ -132,7 +130,7 @@ export default function UsersPage() {
                 <button
                   type="button"
                   onClick={() => setPassword(strongPassword())}
-                  className="shrink-0 border border-ink px-3 py-2.5 text-sm font-semibold hover:bg-ink hover:text-white"
+                  className="btn shrink-0"
                 >
                   Generate
                 </button>
@@ -264,7 +262,7 @@ export default function UsersPage() {
                   </div>
                   <button
                     type="submit"
-                    className="mt-4 grad-brand px-4 py-2 font-display text-sm font-semibold hover:opacity-90"
+                    className="btn btn-primary mt-4"
                   >
                     Save details
                   </button>
@@ -304,14 +302,14 @@ export default function UsersPage() {
                     />
                     <button
                       type="submit"
-                      className="bg-ink px-4 py-2.5 font-display text-sm font-semibold text-white hover:opacity-90"
+                      className="btn btn-dark"
                     >
                       Delete permanently
                     </button>
                     <button
                       type="button"
                       onClick={() => setDeleting(null)}
-                      className="border border-line px-4 py-2.5 text-sm font-semibold hover:border-ink"
+                      className="btn"
                     >
                       Cancel
                     </button>
@@ -356,7 +354,7 @@ export default function UsersPage() {
                     />
                     <button
                       type="submit"
-                      className="grad-brand px-4 py-2.5 font-display text-sm font-semibold hover:opacity-90"
+                      className="btn btn-primary"
                     >
                       Set password
                     </button>

@@ -241,13 +241,15 @@ export default function ImageEditor({
   // effect that pushes; the counter is only there to redraw the buttons.
   const past = useRef<{ snaps: Snap[]; at: number }>({ snaps: [], at: -1 });
   const replaying = useRef(false);
-  const [, redraw] = useState(0);
+  const [history, setHistory] = useState({ at: -1, length: 0 });
 
   useEffect(() => {
     const made = URL.createObjectURL(file);
-    setSrc(made);
     const probe = new Image();
-    probe.onload = () => setNatural(probe.naturalWidth / probe.naturalHeight);
+    probe.onload = () => {
+      setSrc(made);
+      setNatural(probe.naturalWidth / probe.naturalHeight);
+    };
     probe.src = made;
     return () => URL.revokeObjectURL(made);
   }, [file]);
@@ -268,7 +270,7 @@ export default function ImageEditor({
       const bag = past.current;
       bag.snaps = [...bag.snaps.slice(0, bag.at + 1), { crop, zoom, rotation, ratio, adjust, background }];
       bag.at = bag.snaps.length - 1;
-      redraw((n) => n + 1);
+      setHistory({ at: bag.at, length: bag.snaps.length });
     }, 400);
     return () => clearTimeout(timer);
   }, [crop, zoom, rotation, ratio, adjust, background]);
@@ -285,7 +287,7 @@ export default function ImageEditor({
     setRatio(snap.ratio);
     setAdjust(snap.adjust);
     setBackground(snap.background);
-    redraw((n) => n + 1);
+    setHistory({ at: bag.at, length: bag.snaps.length });
   }
 
   // The preview is the real output, rendered small: one code path decides what
@@ -460,7 +462,7 @@ export default function ImageEditor({
           <button
             type="button"
             onClick={() => step(-1)}
-            disabled={past.current.at <= 0}
+            disabled={history.at <= 0}
             className="btn px-3 py-1.5 disabled:opacity-40"
           >
             Undo
@@ -468,7 +470,7 @@ export default function ImageEditor({
           <button
             type="button"
             onClick={() => step(1)}
-            disabled={past.current.at >= past.current.snaps.length - 1}
+            disabled={history.at >= history.length - 1}
             className="btn px-3 py-1.5 disabled:opacity-40"
           >
             Redo

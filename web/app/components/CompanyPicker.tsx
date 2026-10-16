@@ -28,10 +28,12 @@ export default function CompanyPicker({
   const [active, setActive] = useState(0);
   const box = useRef<HTMLDivElement>(null);
 
-  // Follow the selection when it changes from outside (loading a contact).
-  useEffect(() => {
-    setQuery(selected ? companyLabel(selected) : "");
-  }, [selected]);
+  const selectionLabel = selected ? companyLabel(selected) : "";
+  const [previousSelection, setPreviousSelection] = useState(selectionLabel);
+  if (previousSelection !== selectionLabel) {
+    setPreviousSelection(selectionLabel);
+    setQuery(selectionLabel);
+  }
 
   // Clicking away closes the list and abandons a half-typed query.
   useEffect(() => {

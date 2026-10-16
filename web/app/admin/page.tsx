@@ -88,7 +88,6 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    setStats(null);
     apiJson<Analytics>(`/api/admin/analytics?days=${days}`)
       .then(setStats)
       .catch((e) => setError(e.message));
@@ -133,7 +132,7 @@ export default function DashboardPage() {
           </span>
           <select
             value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
+            onChange={(e) => { setStats(null); setDays(Number(e.target.value)); }}
             aria-label="Period"
             className="field w-auto bg-paper text-sm"
           >
@@ -182,8 +181,8 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="mt-2 flex items-end justify-between gap-3">
-                <p className="flex items-center gap-1 text-xs font-semibold">
+              <div className="metric-trend mt-4 flex flex-wrap items-end justify-between gap-3">
+                <p className="flex flex-wrap items-center gap-1 text-xs font-semibold">
                   {change !== null ? (
                     <>
                       <span style={{ color: change >= 0 ? "#10b981" : "#c2410c" }}>
@@ -202,7 +201,7 @@ export default function DashboardPage() {
                       {tile.key === "contacts" ? `${stats.totals.new_cards} new` : "no earlier data"}
                     </span>
                   )}
-                  <span className="font-normal text-ink-soft">{tile.note}</span>
+                  <span className="w-full font-normal text-ink-soft">{tile.note}</span>
                 </p>
                 <Spark points={points} tint={tile.tint} />
               </div>

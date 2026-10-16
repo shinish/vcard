@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import {
-  ADDRESS_PARTS,
   type AddressValue,
   type ContactField,
   type Kind,

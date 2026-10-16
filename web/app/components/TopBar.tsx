@@ -25,7 +25,7 @@ type Hits = {
  *  Search asks the API on a short delay rather than on every keystroke, and
  *  only from two characters — a one-letter search matches everything.
  */
-export default function TopBar() {
+export default function TopBar({ name }: { name: string }) {
   const [term, setTerm] = useState("");
   const [hits, setHits] = useState<Hits | null>(null);
   const [open, setOpen] = useState(false);
@@ -46,7 +46,6 @@ export default function TopBar() {
 
   useEffect(() => {
     if (term.trim().length < 2) {
-      setHits(null);
       return;
     }
     const timer = setTimeout(() => {
@@ -63,7 +62,7 @@ export default function TopBar() {
   const nothing = hits && hits.companies.length === 0 && hits.people.length === 0;
 
   return (
-    <header className="sticky top-0 z-20 flex items-center gap-4 border-b border-line bg-paper/90 px-5 py-3 backdrop-blur sm:px-9">
+    <header className="workspace-topbar sticky top-0 z-20 flex items-center gap-4 border-b border-line bg-paper/95 px-5 py-4 backdrop-blur sm:px-9">
       <div className="relative min-w-0 flex-1 sm:max-w-xl">
         <span aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft">
           <Icon name="search" className="size-4" />
@@ -71,7 +70,7 @@ export default function TopBar() {
         <input
           ref={box}
           value={term}
-          onChange={(e) => setTerm(e.target.value)}
+          onChange={(e) => { setTerm(e.target.value); if (e.target.value.trim().length < 2) setHits(null); }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           placeholder="Search companies, people or card ids…"
@@ -127,6 +126,11 @@ export default function TopBar() {
         ) : null}
       </div>
 
+      <Link href="/admin/profile" className="workspace-profile" aria-label={`Your profile: ${name}`}>
+        <span className="workspace-avatar" aria-hidden="true">{name.slice(0, 2).toUpperCase()}</span>
+        <span className="hidden min-w-0 sm:block"><strong className="block truncate">{name}</strong><span className="block text-xs text-ink-soft">Administrator</span></span>
+        <Icon name="arrow-right" className="hidden size-3.5 rotate-90 text-ink-soft sm:block" />
+      </Link>
     </header>
   );
 }

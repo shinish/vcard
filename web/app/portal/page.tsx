@@ -61,7 +61,6 @@ export default function PortalPage() {
   }, [router]);
 
   useEffect(() => {
-    setStats(null);
     apiJson<Analytics>(`/api/portal/stats?days=${days}`)
       .then(setStats)
       .catch(() => setStats(null));
@@ -100,7 +99,7 @@ export default function PortalPage() {
   }
 
   return (
-    <main className="min-h-dvh bg-wash">
+    <main className="workspace portal-workspace min-h-dvh bg-wash">
       <header className="grad-shell px-5 py-5 text-white sm:px-9">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
           <div>
@@ -111,7 +110,7 @@ export default function PortalPage() {
           </div>
           <div className="flex items-center gap-3 text-sm">
             <span className="text-white/60">{me.login_email}</span>
-            <button onClick={signOut} className="btn bg-transparent text-white">
+            <button onClick={signOut} className="btn portal-signout">
               Sign out
             </button>
           </div>
@@ -120,7 +119,7 @@ export default function PortalPage() {
 
       <div className="mx-auto max-w-5xl space-y-6 px-5 py-8 sm:px-9">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
-          <section className="surface overflow-hidden">
+          <section className="surface h-fit overflow-hidden">
             <h2 className="border-b border-line px-5 py-3 font-display text-sm font-bold">
               Your card
             </h2>
@@ -133,7 +132,7 @@ export default function PortalPage() {
 
           <div className="space-y-6">
             <section className="surface p-5">
-              <h2 className="font-display text-sm font-bold">Share it</h2>
+              <h2 className="font-display text-sm font-bold">Share your card</h2>
               <div className="mt-3">
                 <CopyLink value={me.url} label="Your link" />
               </div>
@@ -190,7 +189,7 @@ export default function PortalPage() {
                   onClick={() => save({ signature_template: template }, "Saved as your default.")}
                   className="btn btn-primary"
                 >
-                  Keep this one
+                  Save as default
                 </button>
               </div>
             </section>
@@ -200,7 +199,7 @@ export default function PortalPage() {
                 <h2 className="font-display text-sm font-bold">How your card is doing</h2>
                 <select
                   value={days}
-                  onChange={(e) => setDays(Number(e.target.value))}
+                  onChange={(e) => { setStats(null); setDays(Number(e.target.value)); }}
                   aria-label="Period"
                   className="field w-auto text-sm"
                 >
@@ -310,7 +309,7 @@ export default function PortalPage() {
                   />
                 </label>
                 <button type="submit" disabled={busy} className="btn btn-primary sm:col-span-2 sm:w-fit">
-                  Change it
+                  Change password
                 </button>
               </form>
             </section>

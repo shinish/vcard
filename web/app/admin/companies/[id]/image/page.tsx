@@ -56,7 +56,10 @@ const TABS: { key: string; text: string; icon: IconName }[] = [
 
 function Editor({ id }: { id: string }) {
   const router = useRouter();
-  const [field, setField] = useState<FieldKey>("logo");
+  const [field, setField] = useState<FieldKey>(() => {
+    const asked = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("field");
+    return asked === "favicon" ? "favicon" : "logo";
+  });
   const [company, setCompany] = useState<Company | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [edited, setEdited] = useState<File | null>(null);
@@ -67,11 +70,6 @@ function Editor({ id }: { id: string }) {
   const spec = FIELDS[field];
 
   useEffect(() => {
-    const asked = new URLSearchParams(window.location.search).get("field");
-    if (asked === "favicon" || asked === "logo") setField(asked);
-  }, []);
-
-  useEffect(() => {
     apiJson<Company>(`/api/admin/companies/${id}`)
       .then(setCompany)
       .catch((e) => setError(e.message));
@@ -79,36 +77,22 @@ function Editor({ id }: { id: string }) {
 
   /** Fetch what is already saved so it can be re-cropped without hunting for
    *  the original file. */
-  const loadSaved = useCallback(async () => {
+  const loadSaved = useCallback(() => {
     if (!company) return;
-    const stored =
-      field === "logo"
-        ? company.logo_path
-        : field === "photo"
-          ? company.photo_path
-          : company.favicon_path;
-    if (!stored) {
-      setFile(null);
-      return;
-    }
-    setError(null);
-    try {
-      const res = await fetch(
-        `${API}/api/admin/companies/${id}/${spec.file}?v=${stored}`,
-        { credentials: "include" },
-      );
-      if (!res.ok) throw new Error(`Could not load the saved picture (${res.status}).`);
-      const blob = await res.blob();
-      setFile(new File([blob], spec.file, { type: blob.type || "image/png" }));
-    } catch (cause) {
-      setError((cause as Error).message);
-    }
+    const stored = field === "logo" ? company.logo_path : field === "photo" ? company.photo_path : company.favicon_path;
+    if (!stored) return;
+    return fetch(`${API}/api/admin/companies/${id}/${spec.file}?v=${stored}`, { credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Could not load the saved picture (${res.status}).`);
+        const blob = await res.blob();
+        return new File([blob], spec.file, { type: blob.type || "image/png" });
+      })
+      .then(setFile)
+      .catch((cause: Error) => setError(cause.message));
   }, [company, field, id, spec.file]);
 
   useEffect(() => {
     void loadSaved();
-    setEdited(null);
-    setSaved(false);
   }, [loadSaved]);
 
   async function save() {
@@ -255,7 +239,7 @@ function Editor({ id }: { id: string }) {
           <button
             key={key}
             type="button"
-            onClick={() => setField(key)}
+            onClick={() => { if (key === field) return; setFile(null); setEdited(null); setSaved(false); setError(null); setField(key); }}
             className={`rounded-xl border px-3.5 py-2 text-sm font-semibold ${
               field === key ? "grad-brand border-transparent" : "border-line bg-paper hover:border-brand"
             }`}
@@ -314,7 +298,7 @@ function Editor({ id }: { id: string }) {
             aspect={spec.aspect}
             maxEdge={spec.maxEdge}
             onDone={(result) => setEdited(result)}
-            onCancel={() => void loadSaved()}
+            onCancel={() => { setFile(null); void loadSaved(); }}
           />
         ) : (
           <p className="p-8 text-center text-sm text-ink-soft">

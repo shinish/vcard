@@ -7,7 +7,7 @@ import { use, useEffect, useState } from "react";
 import CopyLink from "../../../components/CopyLink";
 import { Icon } from "../../../components/icons";
 import { LANGUAGES } from "../../../lib/i18n";
-import { API, THEMES, api, apiJson, fullName } from "../../../lib/api";
+import { THEMES, api, apiJson, fullName } from "../../../lib/api";
 
 type Loaded = {
   id: number;

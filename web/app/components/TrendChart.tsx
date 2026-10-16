@@ -40,16 +40,16 @@ export default function TrendChart({
     <figure className="m-0">
       <figcaption className="mb-2 flex flex-wrap gap-4 text-xs font-semibold">
         <span className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="block h-0.5 w-5" style={{ background: "#15365c" }} />
+          <span aria-hidden="true" className="block h-0.5 w-5" style={{ background: "#0067ff" }} />
           Views
         </span>
         <span className="flex items-center gap-1.5">
           <span
             aria-hidden="true"
             className="block h-0.5 w-5"
-            style={{ backgroundImage: "repeating-linear-gradient(90deg,#2f8ad6 0 4px,transparent 4px 7px)" }}
+            style={{ backgroundImage: "repeating-linear-gradient(90deg,#00afb9 0 4px,transparent 4px 7px)" }}
           />
-          Taps
+          Clicks
         </span>
       </figcaption>
 
@@ -85,14 +85,14 @@ export default function TrendChart({
 
         <path
           d={`${line("views")} L${x(series.length - 1)} ${y(0)} L${x(0)} ${y(0)} Z`}
-          fill="#15365c"
+          fill="#0067ff"
           opacity={0.1}
         />
-        <path d={line("views")} fill="none" stroke="#15365c" strokeWidth={2} />
+        <path d={line("views")} fill="none" stroke="#0067ff" strokeWidth={2} />
         <path
           d={line("clicks")}
           fill="none"
-          stroke="#2f8ad6"
+          stroke="#00afb9"
           strokeWidth={2}
           strokeDasharray="5 3"
         />

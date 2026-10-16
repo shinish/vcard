@@ -43,7 +43,7 @@ export default function ChooseCompanyPage() {
     <>
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold">Choose a company</h1>
+          <h1 className="font-display text-2xl font-bold">Companies</h1>
           <p className="mt-1 text-sm text-ink-soft">
             Open one to manage its people. A company with several branches lists each
             separately, since every branch has its own address and phone.
@@ -58,7 +58,7 @@ export default function ChooseCompanyPage() {
       </header>
 
       {adding ? (
-        <form onSubmit={addCompany} className="mb-7 max-w-xl border border-line bg-paper p-6">
+        <form onSubmit={addCompany} className="surface mb-7 max-w-xl p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block space-y-1.5">
               <span className="text-sm font-semibold text-ink-soft">Company name</span>
@@ -129,7 +129,7 @@ export default function ChooseCompanyPage() {
                   <Link
                     key={row.id}
                     href={`/admin/companies/${row.id}`}
-                    className="group border border-line bg-paper p-6 hover:border-brand"
+                    className="company-tile surface group block p-6 hover:border-brand"
                   >
                     <span className="grad-rule block h-1 w-8" />
                     <h3 className="mt-4 font-display text-lg font-bold group-hover:text-brand-ink">

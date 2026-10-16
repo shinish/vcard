@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./workspace.css";
 
 /* Navy, blue and the logo's gold — the palette of the supplied designs.
    Blue carries every action, navy carries weight, gold appears only where the

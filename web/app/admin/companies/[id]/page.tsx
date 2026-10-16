@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 
 import CopyLink from "../../../components/CopyLink";
 import ImagePicker from "../../../components/ImagePicker";
@@ -56,7 +56,7 @@ type Row = {
 };
 
 const TABS: { key: string; text: string; icon: IconName }[] = [
-  { key: "overview", text: "Company information", icon: "building" },
+  { key: "overview", text: "Overview", icon: "building" },
   { key: "branding", text: "Branding", icon: "grid" },
   { key: "design", text: "Card design", icon: "qr" },
   { key: "people", text: "People", icon: "people" },
@@ -84,7 +84,10 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showing, setShowing] = useState<Row | null>(null);
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState(() => {
+    const asked = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("tab");
+    return asked && TABS.some((t) => t.key === asked) ? asked : "overview";
+  });
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [theme, setTheme] = useState<ThemeKey>("plain");
@@ -124,7 +127,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
   // Bumped on every save so the preview iframe reloads the card.
   const [version, setVersion] = useState(0);
 
-  function loadCompany() {
+  const loadCompany = useCallback(() => {
     apiJson<Company>(`/api/admin/companies/${id}`)
       .then((c) => {
         setCompany(c);
@@ -148,19 +151,13 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
         setNotifyTo(c.notify_to ?? "");
       })
       .catch((e) => setError(e.message));
-  }
+  }, [id]);
 
-  function loadMedia() {
+  const loadMedia = useCallback(() => {
     apiJson<Media[]>(`/api/admin/companies/${id}/media`)
       .then(setMedia)
       .catch((e) => setError(e.message));
-  }
-
-  useEffect(() => {
-    // The editor page links back to a named tab.
-    const asked = new URLSearchParams(window.location.search).get("tab");
-    if (asked && TABS.some((t) => t.key === asked)) setTab(asked);
-  }, []);
+  }, [id]);
 
   useEffect(() => {
     apiJson<{ require_2fa: string; session_hours: string }>("/api/admin/settings")
@@ -174,7 +171,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
     apiJson<Row[]>(`/api/admin/contacts?company_id=${id}`)
       .then(setRows)
       .catch((e) => setError(e.message));
-  }, [id]);
+  }, [id, loadCompany, loadMedia]);
 
   /** One PATCH for the details and the look together.
    *
@@ -224,7 +221,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
         <span className="truncate font-semibold">{company?.name ?? "Company"}</span>
       </nav>
 
-      <header className="surface mb-5 flex flex-wrap items-center gap-5 p-5">
+      <header className="company-header mb-5 flex flex-wrap items-center gap-5">
         <span className="flex size-20 shrink-0 items-center justify-center rounded-xl border border-line bg-wash p-2">
           {logoSrc ? (
             // eslint-disable-next-line @next/next/no-img-element -- served by the API
@@ -346,14 +343,14 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
         </div>
       </header>
 
-      <div className="surface mb-6 flex gap-1 overflow-x-auto p-1.5">
+      <div className="company-tabs surface mb-5 flex gap-1 overflow-x-auto">
         {TABS.map((t) => (
           <button
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
             aria-current={tab === t.key ? "true" : undefined}
-            className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2 font-display text-sm font-semibold transition-colors ${
+            className={`company-tab flex shrink-0 items-center gap-2 px-5 py-4 text-sm font-semibold transition-colors ${
               tab === t.key ? "grad-brand" : "text-ink-soft hover:bg-wash hover:text-ink"
             }`}
           >
@@ -374,18 +371,18 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
         </p>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="min-w-0">
-          <form id="company" onSubmit={save} hidden={!EDITS.includes(tab)}>
+      <div data-tab={tab} className="company-grid grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="company-editor min-w-0">
+          <form className="company-form" id="company" onSubmit={save} hidden={!EDITS.includes(tab)}>
             {/* --- Company information ------------------------------------ */}
-            <section hidden={tab !== "overview"} className="surface p-6">
+            <section hidden={tab !== "overview"} className="company-information surface p-6">
               <h2 className="font-display text-lg font-bold">Company information</h2>
               <p className="mt-1 text-sm text-ink-soft">
                 These fill in automatically on a new person here. Changing them later does not
                 rewrite cards that already exist.
               </p>
 
-              <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_13rem]">
+              <div className="company-information-fields mt-5 grid gap-5">
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block space-y-1.5">
                   <span className="text-sm font-semibold text-ink-soft">Company name *</span>
@@ -494,7 +491,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
 
             {/* The templates again, as a strip: choosing one here is the same
                 control as on Card design, bound to the same form state. */}
-            <section hidden={tab !== "overview"} className="surface mt-6 p-6">
+            <section hidden={tab !== "overview"} className="company-templates surface p-5">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h2 className="font-display text-lg font-bold">Card templates</h2>
@@ -1473,15 +1470,15 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
         {/* --- Live preview ------------------------------------------------
             The real card in an iframe rather than a mock-up of one: there is
             only one renderer to keep honest. */}
-        <aside className="surface h-fit p-4 xl:sticky xl:top-6">
+        <aside className="company-preview surface h-fit p-5 xl:sticky xl:top-24">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="font-display text-base font-bold">Live card preview</h2>
+              <h2 className="font-display text-base font-bold">Digital card preview</h2>
               <p className="text-xs text-ink-soft">Saved changes show here.</p>
             </div>
             <div className="flex gap-1 rounded-full bg-wash p-1">
               {[
-                { key: false, text: "Phone" },
+                { key: false, text: "Mobile" },
                 { key: true, text: "Desktop" },
               ].map((o) => (
                 <button

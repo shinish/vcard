@@ -42,13 +42,11 @@ export default function AddressInput({
   useEffect(() => {
     const text = query.trim();
     if (text.length < 3) {
-      setResults(null);
-      setSearching(false);
       return;
     }
-    setSearching(true);
     // Debounced: one lookup after typing settles, not one per keystroke.
     const timer = setTimeout(async () => {
+      setSearching(true);
       const ticket = ++latest.current;
       try {
         const country = countryHint ? `&country=${encodeURIComponent(countryHint)}` : "";
@@ -85,7 +83,7 @@ export default function AddressInput({
         </span>
         <input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { latest.current += 1; setQuery(e.target.value); setResults(null); setSearching(e.target.value.trim().length >= 3); }}
           placeholder="Start typing a street, building or area"
           className={input}
         />

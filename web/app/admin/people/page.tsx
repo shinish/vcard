@@ -36,7 +36,6 @@ export default function PeoplePage() {
   }, []);
 
   useEffect(() => {
-    setRows(null);
     const scope = companyId ? `?company_id=${companyId}` : "";
     apiJson<Row[]>(`/api/admin/contacts${scope}`)
       .then(setRows)
@@ -67,7 +66,7 @@ export default function PeoplePage() {
               : `${shown.length} ${shown.length === 1 ? "person" : "people"} with a card.`}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="directory-toolbar flex flex-wrap items-center gap-2">
           <input
             value={term}
             onChange={(e) => setTerm(e.target.value)}
@@ -77,7 +76,7 @@ export default function PeoplePage() {
           />
           <select
             value={companyId}
-            onChange={(e) => setCompanyId(e.target.value)}
+            onChange={(e) => { setRows(null); setCompanyId(e.target.value); }}
             aria-label="Company"
             className="field w-auto text-sm"
           >
@@ -105,7 +104,7 @@ export default function PeoplePage() {
         <p className="text-ink-soft">Loading…</p>
       ) : shown.length === 0 ? (
         <div className="surface max-w-xl p-8">
-          <h2 className="font-display text-lg font-bold">Nobody here</h2>
+          <h2 className="font-display text-lg font-bold">{term || companyId ? "No matching people" : "Create your first contact card"}</h2>
           <p className="mt-2 text-sm text-ink-soft">
             {term || companyId
               ? "Nothing matches that filter."
@@ -115,7 +114,7 @@ export default function PeoplePage() {
       ) : (
         <div className="surface divide-y divide-line overflow-hidden">
           {shown.map((row) => (
-            <article key={row.id} className="flex flex-wrap items-center gap-4 p-4">
+            <article key={row.id} className="directory-row flex flex-wrap items-center gap-4 p-5">
               {row.photo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element -- pre-sized by the API
                 <img

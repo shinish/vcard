@@ -101,7 +101,6 @@ function seedFromCompany(company: Company | undefined): ContactField[] {
 }
 
 export default function ContactForm({
-  me,
   companies,
   contact,
   presetCompanyId,
@@ -335,7 +334,7 @@ export default function ContactForm({
             onChange={(e) => {
               if (e.target.value) setFields([...fields, blank(e.target.value as Kind)]);
             }}
-            className="border border-line bg-paper px-3 py-1.5 text-sm"
+            className="btn"
           >
             <option value="">Add more…</option>
             {MORE.map((kind) => (

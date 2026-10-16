@@ -50,6 +50,7 @@ export default function CopyLink({ value, label }: { value: string; label?: stri
         <input
           ref={input}
           readOnly
+          aria-label={label ?? "Share link"}
           value={value}
           onFocus={(e) => e.currentTarget.select()}
           className="min-w-0 flex-1 border border-line bg-wash px-3 py-2.5 font-mono text-sm"
@@ -57,7 +58,7 @@ export default function CopyLink({ value, label }: { value: string; label?: stri
         <button
           type="button"
           onClick={copy}
-          className="shrink-0 bg-ink px-4 py-2.5 font-display text-sm font-semibold text-white hover:bg-brand hover:text-ink"
+          className="btn btn-dark shrink-0"
         >
           {state === "copied" ? "Copied" : "Copy"}
         </button>

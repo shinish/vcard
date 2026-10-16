@@ -23,11 +23,11 @@ const RANGE_LABELS: Record<number, string> = {
   365: "Last 12 months",
 };
 
-const TILES: { key: "views" | "visitors" | "clicks" | "saves"; label: string; icon: IconName }[] = [
+const TILES: { key: "views" | "visitors" | "clicks" | "shares"; label: string; icon: IconName }[] = [
   { key: "views", label: "Total views", icon: "eye" },
   { key: "visitors", label: "Visitors", icon: "people" },
-  { key: "clicks", label: "Total taps", icon: "tap" },
-  { key: "saves", label: "Saved to a phone", icon: "download" },
+  { key: "clicks", label: "Total clicks", icon: "tap" },
+  { key: "shares", label: "Shares", icon: "share" },
 ];
 
 /** A date the way the mock-up writes one: 1 Oct 2026. */
@@ -41,7 +41,7 @@ export default function AnalyticsPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [grain, setGrain] = useState<"day" | "week" | "month">("day");
-  const [companyId, setCompanyId] = useState("");
+  const [companyId, setCompanyId] = useState(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("company") ?? "");
   const [contactId, setContactId] = useState("");
   const [companies, setCompanies] = useState<Company[]>([]);
   const [people, setPeople] = useState<{ id: number; first_name: string; last_name: string | null }[]>(
@@ -55,16 +55,12 @@ export default function AnalyticsPage() {
   const [allSources, setAllSources] = useState(false);
 
   useEffect(() => {
-    // Arriving from a company's own Settings tab, which passes ?company=.
-    const asked = new URLSearchParams(window.location.search).get("company");
-    if (asked) setCompanyId(asked);
     apiJson<Company[]>("/api/admin/companies")
       .then(setCompanies)
       .catch((e) => setError(e.message));
   }, []);
 
   useEffect(() => {
-    setContactId("");
     const scope = companyId ? `?company_id=${companyId}` : "";
     apiJson<{ id: number; first_name: string; last_name: string | null }[]>(
       `/api/admin/contacts${scope}`,
@@ -74,7 +70,6 @@ export default function AnalyticsPage() {
   }, [companyId]);
 
   useEffect(() => {
-    setData(null);
     const scope = contactId
       ? `&contact_id=${contactId}`
       : companyId
@@ -146,7 +141,7 @@ export default function AnalyticsPage() {
   const shownSources = allSources ? data?.sources ?? [] : (data?.sources ?? []).slice(0, 5);
 
   return (
-    <>
+    <div className="analytics-page">
       <nav className="mb-4 flex items-center gap-2 text-sm">
         <span className="font-semibold text-ink-soft">Analytics</span>
         {company ? (
@@ -165,7 +160,7 @@ export default function AnalyticsPage() {
       </nav>
 
       {/* --- Who and when ------------------------------------------------- */}
-      <header className="surface mb-5 p-5">
+      <header className="analytics-header mb-6">
         <div className="flex flex-wrap items-center gap-5">
         <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-line bg-wash p-2">
           {company?.logo_path ? (
@@ -199,16 +194,17 @@ export default function AnalyticsPage() {
             {data
               ? `Cards opened between ${pretty(data.from)} and ${pretty(data.to)}. `
               : "Counting… "}
-            No address is stored, so a visitor is a hash re-salted every day.
+            Track engagement with your digital contact cards.
           </p>
         </div>
 
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-4">
+        <div className="analytics-filters mt-5 flex flex-wrap items-center gap-2">
           <select
             value={from && to ? "custom" : String(days)}
             onChange={(e) => {
+              setData(null);
               if (e.target.value === "custom") {
                 const end = new Date();
                 const begin = new Date(end);
@@ -238,7 +234,7 @@ export default function AnalyticsPage() {
                 type="date"
                 value={from}
                 max={to}
-                onChange={(e) => setFrom(e.target.value)}
+                onChange={(e) => { setData(null); setFrom(e.target.value); }}
                 aria-label="From"
                 className="field w-auto text-sm"
               />
@@ -247,7 +243,7 @@ export default function AnalyticsPage() {
                 type="date"
                 value={to}
                 min={from}
-                onChange={(e) => setTo(e.target.value)}
+                onChange={(e) => { setData(null); setTo(e.target.value); }}
                 aria-label="To"
                 className="field w-auto text-sm"
               />
@@ -256,7 +252,7 @@ export default function AnalyticsPage() {
 
           <select
             value={companyId}
-            onChange={(e) => setCompanyId(e.target.value)}
+            onChange={(e) => { setData(null); setContactId(""); setCompanyId(e.target.value); }}
             aria-label="Company"
             className="field w-auto bg-paper text-sm"
           >
@@ -270,7 +266,7 @@ export default function AnalyticsPage() {
 
           <select
             value={contactId}
-            onChange={(e) => setContactId(e.target.value)}
+            onChange={(e) => { setData(null); setContactId(e.target.value); }}
             aria-label="Person"
             className="field w-auto bg-paper text-sm"
           >
@@ -315,7 +311,7 @@ export default function AnalyticsPage() {
       ) : (
         <>
           {/* --- The five figures ----------------------------------------- */}
-          <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="analytics-metrics mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {TILES.map((tile) => (
               <Tile
                 key={tile.key}
@@ -335,13 +331,13 @@ export default function AnalyticsPage() {
           </div>
 
           {/* --- The chart and the gap where countries would be ------------ */}
-          <div className="mb-5 grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+          <div className="analytics-chart-grid mb-5 grid gap-5 xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">
             <section className="surface p-5">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="font-display text-lg font-bold">Views and taps</h2>
+                <h2 className="font-display text-lg font-bold">Views and clicks</h2>
                 <select
                   value={grain}
-                  onChange={(e) => setGrain(e.target.value as "day" | "week" | "month")}
+                  onChange={(e) => { setData(null); setGrain(e.target.value as "day" | "week" | "month"); }}
                   aria-label="Group by"
                   className="field w-auto bg-paper text-sm"
                 >
@@ -353,26 +349,16 @@ export default function AnalyticsPage() {
               <TrendChart series={data.series} />
             </section>
 
-            <section className="surface flex flex-col p-5">
-              <h2 className="font-display text-lg font-bold">Where they are</h2>
-              <p className="mt-1 text-sm text-ink-soft">
-                Not available, and deliberately so: a country needs the opener&rsquo;s IP address
-                looked up by a third party, and no address is stored anywhere in this app.
-              </p>
-              <div className="mt-4 flex flex-1 items-center justify-center rounded-xl border border-dashed border-line bg-wash p-6 text-center">
-                <p className="text-sm text-ink-soft">
-                  Add an IP-geolocation provider and this becomes a map.
-                  <span className="mt-2 block text-xs">
-                    Until then, <strong className="font-semibold text-ink">where views came
-                    from</strong> below answers the same question without tracking anyone.
-                  </span>
-                </p>
-              </div>
+            <section className="analytics-devices surface p-5">
+              <h2 className="font-display text-lg font-bold">Devices</h2>
+              <p className="mt-1 text-xs text-ink-soft">How people open your cards.</p>
+              <Donut slices={data.devices.map((d) => ({ label: d.device, value: d.n }))} total={data.totals.views} />
+              <p className="mt-4 border-t border-line pt-3 text-xs text-ink-soft">Visitor locations are not collected.</p>
             </section>
           </div>
 
           {/* --- Cards, actions, devices, referrers ------------------------ */}
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+          <div className="analytics-detail-grid grid gap-5">
             <section className="surface overflow-hidden">
               <div className="flex items-center justify-between gap-3 border-b border-line p-5">
                 <div>
@@ -447,9 +433,9 @@ export default function AnalyticsPage() {
               )}
             </section>
 
-            <div className="space-y-5">
+            <div className="analytics-secondary space-y-5">
               <section className="surface p-5">
-                <h2 className="font-display text-lg font-bold">Top tapped actions</h2>
+                <h2 className="font-display text-lg font-bold">Top clicked actions</h2>
                 {data.actions.length === 0 ? (
                   <p className="mt-2 text-sm text-ink-soft">No taps yet in this period.</p>
                 ) : (
@@ -474,16 +460,8 @@ export default function AnalyticsPage() {
               </section>
 
               <section className="surface p-5">
-                <h2 className="font-display text-lg font-bold">Devices</h2>
-                <Donut
-                  slices={data.devices.map((d) => ({ label: d.device, value: d.n }))}
-                  total={data.totals.views}
-                />
-              </section>
-
-              <section className="surface p-5">
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="font-display text-lg font-bold">Where views came from</h2>
+                  <h2 className="font-display text-lg font-bold">Referrers</h2>
                   {data.sources.length > 5 ? (
                     <button
                       type="button"
@@ -524,7 +502,7 @@ export default function AnalyticsPage() {
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }
 
@@ -575,7 +553,7 @@ function Tile({
   footer?: string;
 }) {
   return (
-    <div className="surface p-4">
+    <div className="analytics-metric surface p-4">
       <span className="tile-icon size-10">
         <Icon name={icon} className="size-5" />
       </span>
@@ -598,10 +576,9 @@ function Tile({
 function Donut({ slices, total }: { slices: { label: string; value: number }[]; total: number }) {
   const sum = slices.reduce((n, s) => n + s.value, 0) || 1;
   // One hue, light to dark: a share of a whole is magnitude, not identity.
-  const tints = ["#15365c", "#2f8ad6", "#7cb6e8", "#c3dcf5"];
+  const tints = ["#0067ff", "#00b8be", "#7950f2", "#b7d9ff"];
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
-  let walked = 0;
 
   if (!slices.length) {
     return <p className="mt-2 text-sm text-ink-soft">Nothing yet in this period.</p>;
@@ -613,8 +590,8 @@ function Donut({ slices, total }: { slices: { label: string; value: number }[]; 
         {slices.map((slice, i) => {
           const share = slice.value / sum;
           const dash = `${share * circumference} ${circumference}`;
-          const offset = -walked * circumference;
-          walked += share;
+          const preceding = slices.slice(0, i).reduce((n, s) => n + s.value, 0);
+          const offset = -(preceding / sum) * circumference;
           return (
             <circle
               key={slice.label}
