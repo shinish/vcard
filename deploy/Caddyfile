@@ -27,8 +27,13 @@
 	}
 }
 
-cards.truestaroman.com {
+truetap.in {
 	import app
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+}
+
+www.truetap.in {
+	redir https://truetap.in{uri} permanent
 }
 
 :80 {

@@ -13,7 +13,7 @@ write_files:
           restart: unless-stopped
           environment:
             COOKIE_SECURE: "1"
-            CORS_ORIGINS: "https://cards.truestaroman.com"
+            CORS_ORIGINS: "https://truetap.in"
           volumes:
             - cards-data:/data
           expose: ["8000"]
@@ -40,15 +40,46 @@ write_files:
   - path: /opt/cards/Caddyfile
     permissions: "0644"
     content: |
-      cards.truestaroman.com {
+      # Two ways in, one app behind them. The domain gets a certificate of its own —
+      # Caddy asks for it the first time someone asks for the name — and the bare
+      # address keeps answering on plain HTTP, for the wait while DNS propagates and
+      # for anything that still has the IP written down.
+      #
+      # Neither needs a cookie setting: the API marks the session cookie Secure by
+      # how the request arrived, so the same image serves both.
+
+      (app) {
       	encode zstd gzip
-      	reverse_proxy web:3000
+
+      	# The API is routed here rather than through the front end: Next resolves
+      	# its rewrites when it builds, so a baked-in API address is wrong in every
+      	# environment but the one that built the image.
+      	handle /api/* {
+      		reverse_proxy api:8000
+      	}
+
+      	handle {
+      		reverse_proxy web:3000
+      	}
+
       	header {
-      		Strict-Transport-Security "max-age=31536000; includeSubDomains"
       		X-Content-Type-Options nosniff
       		Referrer-Policy strict-origin-when-cross-origin
       		-Server
       	}
+      }
+
+      truetap.in {
+      	import app
+      	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+      }
+
+      www.truetap.in {
+      	redir https://truetap.in{uri} permanent
+      }
+
+      :80 {
+      	import app
       }
 runcmd:
   - systemctl enable --now docker
