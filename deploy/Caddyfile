@@ -1,11 +1,12 @@
-# Plain HTTP on whatever address the host answers to. No certificate, no
-# redirect: the app is reached by its IP while the DNS record is pending.
+# Two ways in, one app behind them. The domain gets a certificate of its own —
+# Caddy asks for it the first time someone asks for the name — and the bare
+# address keeps answering on plain HTTP, for the wait while DNS propagates and
+# for anything that still has the IP written down.
 #
-# When cards.truestaroman.com resolves, replace this whole file with a site
-# block named after the domain — Caddy then gets its own certificate, and the
-# session cookie goes back to being Secure on its own, because the API marks
-# the flag from how the request arrived.
-:80 {
+# Neither needs a cookie setting: the API marks the session cookie Secure by
+# how the request arrived, so the same image serves both.
+
+(app) {
 	encode zstd gzip
 
 	# The API is routed here rather than through the front end: Next resolves
@@ -24,4 +25,12 @@
 		Referrer-Policy strict-origin-when-cross-origin
 		-Server
 	}
+}
+
+cards.truestaroman.com {
+	import app
+}
+
+:80 {
+	import app
 }
