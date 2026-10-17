@@ -77,7 +77,7 @@ export default function ChooseCompanyPage() {
                 name="name"
                 required
                 autoFocus
-                placeholder="True Star Business Solutions"
+                placeholder="TrueTap"
                 className="field"
               />
             </label>

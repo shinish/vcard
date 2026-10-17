@@ -2,8 +2,7 @@
 
 Every person in a company gets one share link. Whoever opens it taps once and
 the details land in their phone's address book — photo, job title, every
-number, in English, Arabic, German or French. Built for True Star Business
-Solutions.
+number, in English, Arabic, German or French. Built for TrueTap.
 
 FastAPI and SQLite behind a Next.js front end. Three faces:
 

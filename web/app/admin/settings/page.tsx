@@ -263,7 +263,7 @@ export default function SettingsPage() {
               <input
                 name="mail_from_name"
                 defaultValue={data.mail_from_name}
-                placeholder="True Star Business Solutions"
+                placeholder="TrueTap"
                 className={field}
               />
             </label>
