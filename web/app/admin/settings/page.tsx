@@ -251,7 +251,7 @@ export default function SettingsPage() {
               <input
                 name="mail_from"
                 defaultValue={data.mail_from}
-                placeholder="cards@truestaroman.com"
+                placeholder="cards@truetap.in"
                 className={field}
               />
               <span className="block text-xs text-ink-soft">

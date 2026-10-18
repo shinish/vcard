@@ -105,8 +105,8 @@ export default function HelpPage() {
           <p>Need a hand? Contact our team.</p>
           <a href="tel:+96891232596"><Icon name="phone" className="size-4" />+968 91232596</a>
           <a href="tel:+96890743018"><Icon name="phone" className="size-4" />+968 90743018</a>
-          <a href="mailto:info@truestaroman.com"><Icon name="mail" className="size-4" />info@truestaroman.com</a>
-          <a href="https://www.truestaroman.com/" target="_blank" rel="noopener noreferrer"><Icon name="globe" className="size-4" />www.truestaroman.com</a>
+          <a href="mailto:info@truetap.in"><Icon name="mail" className="size-4" />info@truetap.in</a>
+          <a href="https://truetap.in/" target="_blank" rel="noopener noreferrer"><Icon name="globe" className="size-4" />truetap.in</a>
           <h2 className="mt-6">Workspace shortcuts</h2>
           <p>Jump straight to the right part of your workspace.</p>
           <Link href="/admin/companies">Manage companies<Icon name="arrow-right" className="size-4" /></Link>
