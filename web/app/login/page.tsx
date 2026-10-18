@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -139,7 +138,6 @@ export default function LoginPage() {
         />
         <div className="relative w-full max-w-[24rem] rounded-2xl bg-paper/95 p-7 shadow-lift backdrop-blur-md sm:p-8">
           <div className="text-center">
-            <Image src="/truetap-logo.png" alt="TrueTap" width={196} height={54} priority className="mx-auto" />
             <p className="mt-3 font-display text-sm font-semibold text-brand-ink">
               Contact cards
             </p>
@@ -384,7 +382,7 @@ export default function LoginPage() {
           </p>
 
           <p className="mt-10 text-center text-xs text-ink-soft">
-            © {new Date().getFullYear()} truestar business solution
+            © {new Date().getFullYear()} TrueTap
           </p>
         </div>
       </section>
