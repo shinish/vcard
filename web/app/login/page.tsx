@@ -136,14 +136,13 @@ export default function LoginPage() {
           aria-hidden="true"
           className="absolute inset-0 bg-[#050b14]/70 backdrop-blur-sm lg:hidden"
         />
-        <div className="relative w-full max-w-[24rem] rounded-2xl bg-paper/95 p-7 shadow-lift backdrop-blur-md sm:p-8">
-          <div className="text-center">
-            <p className="mt-3 font-display text-sm font-semibold text-brand-ink">
-              Contact cards
-            </p>
-          </div>
-
-          <h1 className="mt-9 text-center font-display text-[1.6rem] font-bold">
+        <div className="relative w-full max-w-[24rem] overflow-hidden rounded-card bg-paper/95 p-7 shadow-lift backdrop-blur-md sm:p-8">
+          <span
+            aria-hidden="true"
+            className="absolute inset-x-0 top-0 h-[3px]"
+            style={{ backgroundImage: "linear-gradient(90deg,#15365c,#1d6fb8)" }}
+          />
+          <h1 className="font-display text-[1.6rem] font-bold tracking-tight">
             {
               {
                 password: "Welcome back",
@@ -153,7 +152,7 @@ export default function LoginPage() {
               }[mode]
             }
           </h1>
-          <p className="mt-2 text-center text-sm text-ink-soft">
+          <p className="mt-2 text-sm text-ink-soft">
             {
               {
                 password: "Sign in to your account to manage your digital contact cards.",
@@ -166,7 +165,7 @@ export default function LoginPage() {
           </p>
 
           {note ? (
-            <p aria-live="polite" className="confirm mt-4 rounded-lg bg-wash px-3 py-2 text-center text-sm">
+            <p aria-live="polite" className="confirm mt-4 rounded-lg bg-wash px-3 py-2 text-sm">
               {note}
             </p>
           ) : null}
@@ -196,7 +195,7 @@ export default function LoginPage() {
                 {busy ? null : <Icon name="arrow-right" className="size-4" />}
               </button>
 
-              <p className="text-center text-xs text-ink-soft">
+              <p className="text-xs text-ink-soft">
                 Lost the phone? A recovery code works here once.
               </p>
             </form>
@@ -377,11 +376,11 @@ export default function LoginPage() {
             </form>
           )}
 
-          <p className="mt-6 text-center text-sm text-ink-soft">
+          <p className="mt-6 text-sm text-ink-soft">
             No account? <span className="font-semibold text-ink">Contact your administrator</span>
           </p>
 
-          <p className="mt-10 text-center text-xs text-ink-soft">
+          <p className="mt-10 text-xs text-ink-soft">
             © {new Date().getFullYear()} TrueTap
           </p>
         </div>
