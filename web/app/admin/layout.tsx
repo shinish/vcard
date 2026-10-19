@@ -92,11 +92,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="workspace-sidebar flex shrink-0 flex-col">
         <div className="flex items-center justify-between gap-4">
         <Link href="/admin" aria-label="TrueTap dashboard" className="workspace-brand flex items-center gap-3">
+          {/* The mark carries the name on its own. The link keeps its
+              aria-label, so nothing is lost for a screen reader. */}
           <Image src="/truetap-logo.png" alt="TrueTap" width={124} height={34} />
-          <span className="font-display text-xl font-bold leading-tight text-white">
-            <span className="brand-engraved sr-only">TrueTap</span>
-            <span className="block text-xs font-medium text-cyan">Contact cards</span>
-          </span>
         </Link>
 
         <button type="button" className="workspace-menu lg:hidden" aria-expanded={menuOpen} aria-controls="workspace-navigation" onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? "Close menu" : "Menu"}<Icon name="grid" className="size-4" /></button>
