@@ -1,0 +1,6 @@
+[Unit]
+Description=Check the truetap.in certificate has time left on it
+
+[Service]
+Type=oneshot
+ExecStart=/opt/cards/cert-check.sh truetap.in 21

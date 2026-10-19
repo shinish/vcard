@@ -1,0 +1,12 @@
+[Unit]
+Description=Weekly check that truetap.in still serves a live certificate
+
+[Timer]
+# Weekly is plenty: Caddy renews thirty days before expiry, so there are four
+# weeks of warnings before anything a visitor would see. Persistent catches up
+# a run the box slept through instead of skipping it.
+OnCalendar=Mon 08:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
