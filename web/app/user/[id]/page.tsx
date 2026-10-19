@@ -235,7 +235,6 @@ export default async function CardPage({
             <CardShare
               publicId={card.public_id}
               shareUrl={`/user/${card.public_id}`}
-              qrUrl={`${API}/api/public/${card.public_id}/qr.png`}
               shareLabel={words.share}
               copiedLabel={words.linkCopied}
               pdfLabel={words.savePdf}

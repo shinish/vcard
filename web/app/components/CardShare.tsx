@@ -1,22 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { track } from "../lib/track";
 import { Icon } from "./icons";
 
 /** The card's own top bar: share it, or keep it as a PDF.
  *
- *  Sharing hands over the QR code as a picture where the browser allows a
- *  file, so WhatsApp and the like get something to post rather than a bare
- *  link; everywhere else it falls back to the link, then to the clipboard.
- *  The PDF is the browser's own print dialogue — every phone and desktop can
+ *  Sharing hands the phone its own share sheet with the link as text, so
+ *  whatever the sender picks — a message, a chat, mail — receives something
+ *  readable they can tap. The link goes in `text` rather than `url` because a
+ *  target that takes one often ignores the other, and the link is the point.
+ *  No file rides along: attaching the QR made WhatsApp and the like post the
+ *  picture and drop the link entirely.
+ *
+ *  Nothing is awaited before navigator.share. The sheet only opens while the
+ *  tap that asked for it still counts as active, and on iOS a round trip
+ *  inside the handler spends that.
+ *
+ *  Copying is the last resort, for a browser with no share sheet at all. The
+ *  PDF is the browser's own print dialogue — every phone and desktop can
  *  already write one, and the print rules in globals.css make it read like a
  *  card rather than a web page. */
 export default function CardShare({
   publicId,
   shareUrl,
-  qrUrl,
   shareLabel,
   copiedLabel,
   pdfLabel,
@@ -24,35 +32,12 @@ export default function CardShare({
 }: {
   publicId: string;
   shareUrl: string;
-  qrUrl: string;
   shareLabel: string;
   copiedLabel: string;
   pdfLabel: string;
   shareMessage?: string | null;
 }) {
   const [note, setNote] = useState<string | null>(null);
-  const qrFile = useRef<File | null>(null);
-
-  // Fetched ahead of the tap rather than during it. navigator.share() only
-  // runs while the gesture that triggered it still counts as active, and on
-  // iOS awaiting a network round trip inside the handler spends that
-  // activation: the call then throws and the phone's share sheet never opens.
-  useEffect(() => {
-    let live = true;
-    (async () => {
-      try {
-        const response = await fetch(qrUrl);
-        if (!response.ok) return;
-        const file = new File([await response.blob()], "card-qr.png", { type: "image/png" });
-        if (live) qrFile.current = file;
-      } catch {
-        // No QR to hand over. Sharing the link by itself is still worth doing.
-      }
-    })();
-    return () => {
-      live = false;
-    };
-  }, [qrUrl]);
 
   async function copy(url: string) {
     try {
@@ -66,13 +51,10 @@ export default function CardShare({
   function share() {
     track(publicId, "share");
     const url = new URL(shareUrl, window.location.href).toString();
-    const data: ShareData = { title: document.title, text: shareMessage ?? undefined, url };
-
-    const file = qrFile.current;
-    if (file && navigator.canShare?.({ files: [file] })) data.files = [file];
+    const text = shareMessage ? `${shareMessage}\n${url}` : url;
 
     if (navigator.share) {
-      navigator.share(data).catch((cause: unknown) => {
+      navigator.share({ title: document.title, text }).catch((cause: unknown) => {
         // A cancelled sheet is a decision, not a failure — only fall back to
         // the clipboard when the platform refused the share outright.
         if ((cause as Error)?.name !== "AbortError") void copy(url);
