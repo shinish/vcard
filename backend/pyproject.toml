@@ -10,6 +10,7 @@ dependencies = [
     "python-multipart>=0.0.12",  # form/file uploads
     "pillow>=11.0",              # photo validation + resize
     "segno>=1.6",                # QR, pure python
+    "fpdf2>=2.8",
 ]
 
 [dependency-groups]

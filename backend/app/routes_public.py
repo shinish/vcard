@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse, Response
 
 from . import mailer, qr, signature, vcf
 from . import settings as app_settings
+from . import card_pdf as card_pdf_builder
 from .auth import is_admin
 from .config import UPLOADS, public_base_url
 from .contacts import field_rows, serialise
@@ -271,6 +272,26 @@ def card_qr_png(public_id: str, request: Request):
         png,
         media_type="image/png",
         headers={"Content-Disposition": f'attachment; filename="{stem}-qr.png"'},
+    )
+
+
+@router.get("/{public_id}/card.pdf")
+def card_pdf(public_id: str, request: Request):
+    """The card as a one-page PDF, downloaded rather than printed.
+
+    The company logo rides in the QR the same way it does on the download, and
+    the file is named after the person so a folder of them stays readable.
+    """
+    row, fields = fetch(public_id)
+    record(row["id"], "pdf", request=request)
+    company = {"name": row["company_name"]} if row["company_show_name"] else None
+    pdf = card_pdf_builder.build(row, fields, company)
+    stem = "-".join(p for p in (row["first_name"], row["last_name"]) if p) or "contact"
+    stem = re.sub(r"[^A-Za-z0-9_-]", "", stem.replace(" ", "-")) or "contact"
+    return Response(
+        pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{stem}.pdf"'},
     )
 
 

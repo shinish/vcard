@@ -11,6 +11,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import tempfile
 import time
 import zipfile
@@ -1672,3 +1673,54 @@ def test_a_preview_is_not_a_visit_but_only_for_an_admin(seeded):
     # and an admin who does not ask for one still counts as a visit
     assert admin.get(f"/api/public/{public_id}").status_code == 200
     assert views() == 3
+
+
+def test_a_card_downloads_as_one_page_of_pdf(seeded):
+    """Downloaded, not printed: no dialogue, no browser-chosen page size, and
+    one page by construction rather than by hoping the content fits."""
+    admin = sign_in("root", "super-secret-pw")
+    company = admin.post("/api/admin/companies", data={"name": "Printed Ltd"}).json()["id"]
+    made = admin.post(
+        "/api/admin/contacts",
+        data={
+            "first_name": "Paula",
+            "last_name": "Dean",
+            "job_title": "Director",
+            "company_id": company,
+            "fields": '[{"kind":"email","label":"work","value":"paula@example.com"},'
+            '{"kind":"phone","label":"mobile","value":"+44 7700 900100"}]',
+        },
+        files={"photo": ("p.jpg", jpeg_bytes(), "image/jpeg")},
+    )
+    assert made.status_code == 201, made.text
+    public_id = made.json()["public_id"]
+
+    got = TestClient(app).get(f"/api/public/{public_id}/card.pdf")
+    assert got.status_code == 200, got.text
+    assert got.headers["content-type"] == "application/pdf"
+    assert 'filename="Paula-Dean.pdf"' in got.headers["content-disposition"]
+
+    body = got.content
+    assert body.startswith(b"%PDF-"), "not a pdf"
+    assert body.rstrip().endswith(b"%%EOF")
+    assert re.findall(rb"/Count\s+(\d+)", body) == [b"1"], "more than one page"
+
+    # And still one page when the card holds far more than fits: the page
+    # stops taking rows rather than growing a second sheet.
+    crowded = admin.post(
+        "/api/admin/contacts",
+        data={
+            "first_name": "Crowded",
+            "company_id": company,
+            "fields": json.dumps(
+                [
+                    {"kind": "email", "label": f"inbox {i}", "value": f"p{i}@example.com"}
+                    for i in range(40)
+                ]
+            ),
+        },
+    )
+    assert crowded.status_code == 201, crowded.text
+    spill = TestClient(app).get(f"/api/public/{crowded.json()['public_id']}/card.pdf")
+    assert spill.status_code == 200
+    assert re.findall(rb"/Count\s+(\d+)", spill.content) == [b"1"], "overflowed onto a second page"

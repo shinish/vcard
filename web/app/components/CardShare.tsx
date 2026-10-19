@@ -18,10 +18,12 @@ import { Icon } from "./icons";
  *  tap that asked for it still counts as active, and on iOS a round trip
  *  inside the handler spends that.
  *
- *  Copying is the last resort, for a browser with no share sheet at all. The
- *  PDF is the browser's own print dialogue — every phone and desktop can
- *  already write one, and the print rules in globals.css make it read like a
- *  card rather than a web page. */
+ *  Copying is the last resort, for a browser with no share sheet at all.
+ *
+ *  The PDF is built by the API and downloaded, not printed. The print
+ *  dialogue asked a question nobody wanted, let the browser pick the page
+ *  size, and added its own headers; a built page is one sheet with no frame,
+ *  and its text stays selectable. */
 export default function CardShare({
   publicId,
   shareUrl,
@@ -76,19 +78,17 @@ export default function CardShare({
         <Icon name="share" className="size-3.5" />
         {shareLabel}
       </button>
-      <button
-        type="button"
-        onClick={() => {
-          track(publicId, "pdf");
-          window.print();
-        }}
+      <a
+        href={`/api/public/${publicId}/card.pdf`}
+        download
+        onClick={() => track(publicId, "pdf")}
         aria-label={pdfLabel}
         title={pdfLabel}
         className="inline-flex items-center gap-1.5 rounded-full border border-white/35 bg-white/15 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm"
       >
         <Icon name="download" className="size-3.5" />
         PDF
-      </button>
+      </a>
       {note ? (
         <p aria-live="polite" className="text-xs font-semibold text-white/90">
           {note}

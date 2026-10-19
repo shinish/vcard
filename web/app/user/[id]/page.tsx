@@ -593,7 +593,7 @@ export default async function CardPage({
           ) : null}
 
           <p className="mt-auto pt-2 text-center text-[11px] text-ink-soft">
-            TrueTap
+            truetap.in
           </p>
         </div>
       </article>
