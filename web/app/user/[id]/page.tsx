@@ -284,12 +284,12 @@ export default async function CardPage({
                 alt={name}
                 width={160}
                 height={160}
-                className="size-36 shrink-0 rounded-lg border-4 border-paper object-cover object-center shadow-[var(--shadow-soft)]"
+                className="size-36 shrink-0 rounded-lg object-cover object-center shadow-[var(--shadow-soft)]"
               />
             ) : (
               <p
                 aria-hidden="true"
-                className="flex size-36 shrink-0 items-center justify-center rounded-lg border-4 border-paper bg-wash font-display text-4xl text-ink-soft shadow-[var(--shadow-soft)]"
+                className="flex size-36 shrink-0 items-center justify-center rounded-lg bg-wash font-display text-4xl text-ink-soft shadow-[var(--shadow-soft)]"
               >
                 {initials(card)}
               </p>
