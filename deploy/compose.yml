@@ -9,7 +9,10 @@ services:
       # Unset on purpose: the API marks the cookie Secure when the request
       # arrived over HTTPS and not when it did not, so one image serves both
       # the bare address today and the domain tomorrow.
-      CORS_ORIGINS: "https://truetap.in"
+      # Only the fallback: the value an admin sets in Settings is authoritative
+      # and wins. This keeps a fresh box from minting localhost links.
+      PUBLIC_BASE_URL: "https://truetap.in"
+      CORS_ORIGINS: "https://truetap.in,https://www.truetap.in"
     volumes:
       # The database and the uploads outlive every deploy.
       - cards-data:/data

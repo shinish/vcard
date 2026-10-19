@@ -13,7 +13,8 @@ write_files:
           restart: unless-stopped
           environment:
             COOKIE_SECURE: "1"
-            CORS_ORIGINS: "https://truetap.in"
+            PUBLIC_BASE_URL: "https://truetap.in"
+            CORS_ORIGINS: "https://truetap.in,https://www.truetap.in"
           volumes:
             - cards-data:/data
           expose: ["8000"]
