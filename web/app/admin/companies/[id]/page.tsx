@@ -24,6 +24,12 @@ import {
   type FontKey,
   type Media,
   WALLPAPER_FITS,
+  PHOTO_ALIGNS,
+  PHOTO_SHAPES,
+  PHOTO_SIZES,
+  type PhotoAlign,
+  type PhotoShape,
+  type PhotoSize,
   TYPE_SCALES,
   type TypeScaleKey,
   type WallpaperFit,
@@ -108,6 +114,11 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
   const fontChoiceApplied = useRef(false);
   const [fit, setFit] = useState<WallpaperFit>(DEFAULT_WALLPAPER_FIT);
   const [typeScale, setTypeScale] = useState<TypeScaleKey>(DEFAULT_TYPE_SCALE);
+  const [photoShape, setPhotoShape] = useState<PhotoShape>("square");
+  const [photoAlign, setPhotoAlign] = useState<PhotoAlign>("left");
+  const [photoSize, setPhotoSize] = useState<PhotoSize>("medium");
+  const [iconColour, setIconColour] = useState("");
+  const [footerRule, setFooterRule] = useState("");
   const [showQr, setShowQr] = useState(true);
   const [showQrDownload, setShowQrDownload] = useState(true);
   // Every company switch in one bag: they are posted and read the same way.
@@ -164,6 +175,11 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
         fontChoiceApplied.current = true;
         setFit(c.wallpaper_fit ?? DEFAULT_WALLPAPER_FIT);
         setTypeScale(c.type_scale ?? DEFAULT_TYPE_SCALE);
+        setPhotoShape(c.photo_shape ?? "square");
+        setPhotoAlign(c.photo_align ?? "left");
+        setPhotoSize(c.photo_size ?? "medium");
+        setIconColour(c.icon_colour ?? "");
+        setFooterRule(c.footer_rule ?? "");
         setShowQr(Boolean(c.show_qr ?? true));
         setShowQrDownload(Boolean(c.show_qr_download ?? true));
         setSwitches({
@@ -237,6 +253,11 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
     logo_scale: String(logoScale),
     wallpaper_fit: fit,
     type_scale: typeScale,
+    photo_shape: photoShape,
+    photo_align: photoAlign,
+    photo_size: photoSize,
+    icon_colour: iconColour,
+    footer_rule: footerRule,
   }).toString();
   useEffect(() => {
     const timer = setTimeout(() => setSettled(design), 350);
@@ -738,6 +759,24 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
 
                 <div className="space-y-5">
                   <div className="space-y-2">
+                    <span className="block text-sm font-semibold text-ink-soft">
+                      Banner across the card
+                    </span>
+                    <ImagePicker
+                      name="cover"
+                      shape="rect"
+                      aspect={16 / 7}
+                      maxEdge={1600}
+                      label="Banner"
+                      existing={
+                        company?.cover_path
+                          ? `${API}/api/admin/companies/${id}/cover.jpg?v=${company.cover_path}`
+                          : null
+                      }
+                      removeName="remove_cover"
+                      hint="Sits behind the head of the card itself. Different from the background, which dresses the page the card sits on."
+                    />
+
                     <span className="block text-sm font-semibold text-ink-soft">Colours</span>
                     <input
                       type="hidden"
@@ -1146,6 +1185,65 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                         ))}
                       </select>
                     </label>
+
+                    {(
+                      [
+                        ["Photo shape", PHOTO_SHAPES, photoShape, setPhotoShape, "photo_shape"],
+                        ["Photo position", PHOTO_ALIGNS, photoAlign, setPhotoAlign, "photo_align"],
+                        ["Photo size", PHOTO_SIZES, photoSize, setPhotoSize, "photo_size"],
+                      ] as const
+                    ).map(([label, options, value, set, name]) => (
+                      <label key={name} className="block space-y-1.5">
+                        <span className="text-sm font-semibold text-ink-soft">{label}</span>
+                        <select
+                          name={name}
+                          value={value}
+                          onChange={(e) => (set as (v: string) => void)(e.target.value)}
+                          className="field bg-paper"
+                        >
+                          {options.map((o) => (
+                            <option key={o.key} value={o.key}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+
+                    {(
+                      [
+                        ["Icon colour", iconColour, setIconColour, "icon_colour",
+                         "Unset keeps the dark chips"],
+                        ["Footer line", footerRule, setFooterRule, "footer_rule",
+                         "Unset draws no line"],
+                      ] as const
+                    ).map(([label, value, set, name, hint]) => (
+                      <label key={name} className="block space-y-1.5">
+                        <span className="text-sm font-semibold text-ink-soft">{label}</span>
+                        <span className="flex gap-2">
+                          <input
+                            type="color"
+                            value={value || accents[0] || DEFAULT_ACCENT}
+                            onChange={(e) => set(e.target.value)}
+                            aria-label={label}
+                            className="h-11 w-14 shrink-0 rounded-lg border border-line bg-paper p-1"
+                          />
+                          <input
+                            name={name}
+                            value={value}
+                            onChange={(e) => set(e.target.value)}
+                            placeholder={hint}
+                            pattern="#[0-9a-fA-F]{6}"
+                            className="field min-w-0 flex-1 font-mono text-sm"
+                          />
+                          {value ? (
+                            <button type="button" onClick={() => set("")} className="btn px-3">
+                              Clear
+                            </button>
+                          ) : null}
+                        </span>
+                      </label>
+                    ))}
 
                     <label className="block space-y-1.5">
                       <span className="text-sm font-semibold text-ink-soft">Text size</span>

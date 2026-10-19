@@ -58,6 +58,9 @@ from .fields import (
     DEFAULT_LANGUAGE,
     DEFAULT_LOGO_POSITION,
     DEFAULT_LOGO_SCALE,
+    DEFAULT_PHOTO_ALIGN,
+    DEFAULT_PHOTO_SHAPE,
+    DEFAULT_PHOTO_SIZE,
     DEFAULT_THEME,
     DEFAULT_TYPE_SCALE,
     DEFAULT_WALLPAPER_FIT,
@@ -67,6 +70,9 @@ from .fields import (
     MAX_ACCENTS,
     MAX_LOGO_SCALE,
     MIN_LOGO_SCALE,
+    PHOTO_ALIGNS,
+    PHOTO_SHAPES,
+    PHOTO_SIZES,
     SINGLE,
     THEMES,
     TYPE_SCALES,
@@ -83,6 +89,11 @@ BRAND_COLUMNS = (
     "wallpaper_fit",
     "font",
     "type_scale",
+    "photo_shape",
+    "photo_align",
+    "photo_size",
+    "icon_colour",
+    "footer_rule",
     "show_qr",
     "show_qr_download",
     "require_consent",
@@ -177,6 +188,25 @@ def branding(form) -> dict[str, object]:
     if scale_name not in TYPE_SCALES:
         raise HTTPException(422, f"Unknown text size: {scale_name!r}")
 
+    picks = {}
+    for key, allowed, fallback in (
+        ("photo_shape", PHOTO_SHAPES, DEFAULT_PHOTO_SHAPE),
+        ("photo_align", PHOTO_ALIGNS, DEFAULT_PHOTO_ALIGN),
+        ("photo_size", PHOTO_SIZES, DEFAULT_PHOTO_SIZE),
+    ):
+        value = str(form.get(key) or fallback).strip()
+        if value not in allowed:
+            raise HTTPException(422, f"Unknown {key.replace('_', ' ')}: {value!r}")
+        picks[key] = value
+
+    # Empty clears them: no icon colour means follow the palette, and no
+    # footer rule means no line at all.
+    for key in ("icon_colour", "footer_rule"):
+        raw_colour = str(form.get(key) or "").strip()
+        if raw_colour and not HEX.match(raw_colour):
+            raise HTTPException(422, f"{raw_colour!r} is not a colour like #1E90FF")
+        picks[key] = raw_colour.lower() or None
+
     rest: dict[str, object] = {
         "theme": theme,
         "logo_position": position,
@@ -185,6 +215,7 @@ def branding(form) -> dict[str, object]:
         "wallpaper_fit": fit,
         "font": font,
         "type_scale": scale_name,
+        **picks,
         # Every switch is posted as "1" or "0" by the admin UI; a form that
         # leaves one out keeps that column's default.
         **{
@@ -235,6 +266,20 @@ async def store_wallpaper(upload: UploadFile, company_id: int) -> str:
     return name
 
 
+async def store_cover(upload: UploadFile, company_id: int) -> str:
+    """The banner across the head of the card.
+
+    Saved with the wallpaper's own writer: both are wide photographs, and the
+    difference between them is where they are shown, not how they are stored.
+    """
+    try:
+        name = f"cover-{company_id}.jpg"
+        photos.save_wallpaper(await upload.read(), UPLOADS / name)
+    except photos.BadImage as e:
+        raise HTTPException(422, str(e)) from e
+    return name
+
+
 async def store_favicon(upload: UploadFile, company_id: int) -> str:
     try:
         name = f"icon-{company_id}.png"
@@ -263,6 +308,7 @@ async def apply_pictures(form, company_id: int) -> None:
         ("favicon", store_favicon, "favicon_path", f"icon-{company_id}.png"),
         ("photo", store_company_photo, "photo_path", f"photo-{company_id}.jpg"),
         ("wallpaper", store_wallpaper, "wallpaper_path", f"wall-{company_id}.jpg"),
+        ("cover", store_cover, "cover_path", f"cover-{company_id}.jpg"),
     ):
         upload = form.get(field)
         if isinstance(upload, UploadFile) and upload.filename:
@@ -735,6 +781,21 @@ def company_logo(company_id: int, user: CurrentUser):
     if not path.exists():
         raise HTTPException(404, "No logo")
     return FileResponse(path, media_type="image/png")
+
+
+@router.get("/companies/{company_id}/cover.jpg")
+def company_cover(company_id: int, user: CurrentUser):
+    """Preview the banner in the admin, before any contact exists to show it."""
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT cover_path FROM companies WHERE id = ?", (company_id,)
+        ).fetchone()
+    if row is None or not row["cover_path"]:
+        raise HTTPException(404, "No banner")
+    path = UPLOADS / row["cover_path"]
+    if not path.exists():
+        raise HTTPException(404, "No banner")
+    return FileResponse(path, media_type="image/jpeg")
 
 
 @router.get("/companies/{company_id}/favicon.png")

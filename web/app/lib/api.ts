@@ -83,6 +83,12 @@ export type Contact = Record<SingleField, string | null> & {
     language: Language;
     font: FontKey;
   type_scale: TypeScaleKey;
+  cover_url: string | null;
+  photo_shape: PhotoShape;
+  photo_align: PhotoAlign;
+  photo_size: PhotoSize;
+  icon_colour: string | null;
+  footer_rule: string | null;
     wallpaper_url: string | null;
     wallpaper_fit: WallpaperFit;
     show_qr: boolean;
@@ -169,6 +175,27 @@ export const TYPE_SCALES = [
 ] as const;
 export type TypeScaleKey = (typeof TYPE_SCALES)[number]["key"];
 export const DEFAULT_TYPE_SCALE: TypeScaleKey = "normal";
+
+/** The card holder's photo: how it is cut, where it sits, how large it runs. */
+export const PHOTO_SHAPES = [
+  { key: "square", label: "Square" },
+  { key: "circle", label: "Circle" },
+] as const;
+export type PhotoShape = (typeof PHOTO_SHAPES)[number]["key"];
+
+export const PHOTO_ALIGNS = [
+  { key: "left", label: "Left" },
+  { key: "center", label: "Centre" },
+  { key: "right", label: "Right" },
+] as const;
+export type PhotoAlign = (typeof PHOTO_ALIGNS)[number]["key"];
+
+export const PHOTO_SIZES = [
+  { key: "small", label: "Small" },
+  { key: "medium", label: "Medium" },
+  { key: "large", label: "Large" },
+] as const;
+export type PhotoSize = (typeof PHOTO_SIZES)[number]["key"];
 export const DEFAULT_FONT: FontKey = "poppins";
 
 export type ThemeKey = (typeof THEMES)[number]["key"];
@@ -241,7 +268,14 @@ export type Company = {
   language: Language;
   font: FontKey;
   type_scale: TypeScaleKey;
+  cover_url: string | null;
+  photo_shape: PhotoShape;
+  photo_align: PhotoAlign;
+  photo_size: PhotoSize;
+  icon_colour: string | null;
+  footer_rule: string | null;
   wallpaper_path: string | null;
+  cover_path: string | null;
   wallpaper_fit: WallpaperFit;
   show_qr: boolean | number;
   show_qr_download: boolean | number;

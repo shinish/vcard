@@ -138,6 +138,20 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
+/** Written out rather than built from the value: a class name assembled at
+ *  runtime is invisible to the stylesheet build, and the rule is dropped. */
+const PHOTO_SIZE: Record<string, string> = {
+  small: "size-28",
+  medium: "size-36",
+  large: "size-48",
+};
+
+const PHOTO_ALIGN: Record<string, string> = {
+  left: "text-start",
+  center: "text-center",
+  right: "text-end",
+};
+
 const PREVIEW_KEYS = ["theme", "font", "accents", "logo_position", "logo_scale", "wallpaper_fit"];
 
 /** Unsaved styling, for the card designer's live preview.
@@ -216,6 +230,12 @@ export default async function CardPage({
     language,
     font: savedFont,
     type_scale: typeScale,
+    cover_url: coverUrl,
+    photo_shape: photoShape,
+    photo_align: photoAlign,
+    photo_size: photoSize,
+    icon_colour: iconColour,
+    footer_rule: footerRule,
     wallpaper_url: wallpaperUrl,
     wallpaper_fit: savedWallpaperFit,
     show_qr: showQr,
@@ -287,6 +307,9 @@ export default async function CardPage({
         .join(" ")}
       style={{
         ...paletteStyle(accents),
+        // Unset means follow the palette, which is what most cards want.
+        ...(iconColour ? { "--icon": iconColour } : {}),
+        ...(footerRule ? { "--footer-rule": footerRule } : {}),
         ...(wallpaperUrl ? ({ "--wallpaper": `url(${API}${wallpaperUrl})` } as React.CSSProperties) : {}),
       }}
     >
@@ -301,11 +324,11 @@ export default async function CardPage({
             whatever room the bar leaves it. */}
         <header
           className={`accent-band px-6 pb-20 pt-5 text-white lg:rounded-t-2xl${
-            wallpaperUrl ? " has-cover" : ""
+            coverUrl ? " has-cover" : ""
           }`}
           style={
-            wallpaperUrl
-              ? ({ "--cover": `url(${API}${wallpaperUrl})` } as React.CSSProperties)
+            coverUrl
+              ? ({ "--cover": `url(${API}${coverUrl})` } as React.CSSProperties)
               : undefined
           }
         >
@@ -353,7 +376,7 @@ export default async function CardPage({
         <div className="relative z-10 -mt-16 flex flex-1 flex-col gap-7 px-6 pb-10">
           {/* Who this is: the photo at the size a face needs, then the name,
               the job title and the company, aligned to the margin. */}
-          <section className="text-start">
+          <section className={PHOTO_ALIGN[photoAlign] ?? PHOTO_ALIGN.left}>
             {card.photo_url ? (
               // eslint-disable-next-line @next/next/no-img-element -- served pre-sized by the API
               <img
@@ -361,12 +384,20 @@ export default async function CardPage({
                 alt={name}
                 width={160}
                 height={160}
-                className="size-36 shrink-0 rounded-lg object-cover object-center shadow-[var(--shadow-soft)]"
+                className={`${PHOTO_SIZE[photoSize] ?? PHOTO_SIZE.medium} shrink-0 ${
+                  photoShape === "circle" ? "rounded-full" : "rounded-lg"
+                } object-cover object-center shadow-[var(--shadow-soft)]${
+                  photoAlign === "center" ? " mx-auto" : photoAlign === "right" ? " ms-auto" : ""
+                }`}
               />
             ) : (
               <p
                 aria-hidden="true"
-                className="flex size-36 shrink-0 items-center justify-center rounded-lg bg-wash font-display text-4xl text-ink-soft shadow-[var(--shadow-soft)]"
+                className={`flex ${PHOTO_SIZE[photoSize] ?? PHOTO_SIZE.medium} shrink-0 items-center justify-center ${
+                  photoShape === "circle" ? "rounded-full" : "rounded-lg"
+                } bg-wash font-display text-4xl text-ink-soft shadow-[var(--shadow-soft)]${
+                  photoAlign === "center" ? " mx-auto" : photoAlign === "right" ? " ms-auto" : ""
+                }`}
               >
                 {initials(card)}
               </p>
@@ -439,7 +470,12 @@ export default async function CardPage({
                         target="_blank"
                         rel="noreferrer"
                         title={`${row.label}: ${row.value}`}
-                        className="flex size-11 items-center justify-center rounded-full bg-ink text-white hover:bg-brand hover:text-ink"
+                        // Unset keeps the near-black chip every existing card
+                        // already wears; a colour here is a deliberate choice.
+                        style={iconColour ? { backgroundColor: iconColour } : undefined}
+                        className={`flex size-11 items-center justify-center rounded-full text-white${
+                          iconColour ? "" : " bg-ink hover:bg-brand hover:text-ink"
+                        }`}
                       >
                         <SocialMark name={mark} />
                         <span className="sr-only">{row.label}</span>
@@ -597,7 +633,17 @@ export default async function CardPage({
             </div>
           ) : null}
 
-          <p className="mt-auto pt-2 text-center text-[11px] text-ink-soft">
+          {footerRule ? (
+            <span
+              aria-hidden="true"
+              className="mt-auto block h-px w-full"
+              style={{ backgroundColor: footerRule }}
+            />
+          ) : null}
+
+          <p
+            className={`${footerRule ? "pt-3" : "mt-auto pt-2"} text-center text-[11px] text-ink-soft`}
+          >
             {/* noopener without noreferrer: the referrer is the point, it is
                 how a visit arriving from someone's card can be recognised. */}
             <a

@@ -175,6 +175,16 @@ def init() -> None:
                 "wallpaper_fit": "TEXT NOT NULL DEFAULT 'cover'",
                 "font": "TEXT NOT NULL DEFAULT 'poppins'",
                 "type_scale": "TEXT NOT NULL DEFAULT 'normal'",
+                # The banner across the head of the card. Separate from the
+                # wallpaper, which dresses the page behind it: one is the
+                # card's own design, the other is the room it sits in.
+                "cover_path": "TEXT",
+                "photo_shape": "TEXT NOT NULL DEFAULT 'square'",
+                "photo_align": "TEXT NOT NULL DEFAULT 'left'",
+                "photo_size": "TEXT NOT NULL DEFAULT 'medium'",
+                # Null means follow the palette, which is what most cards want.
+                "icon_colour": "TEXT",
+                "footer_rule": "TEXT",
                 "show_qr": "INTEGER NOT NULL DEFAULT 1",
                 "show_qr_download": "INTEGER NOT NULL DEFAULT 1",
                 "favicon_path": "TEXT",

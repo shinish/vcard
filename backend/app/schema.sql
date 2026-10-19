@@ -25,6 +25,12 @@ CREATE TABLE IF NOT EXISTS companies (
   wallpaper_fit  TEXT NOT NULL DEFAULT 'cover',
   font       TEXT NOT NULL DEFAULT 'poppins',
   type_scale TEXT NOT NULL DEFAULT 'normal',
+  cover_path TEXT,
+  photo_shape TEXT NOT NULL DEFAULT 'square',
+  photo_align TEXT NOT NULL DEFAULT 'left',
+  photo_size  TEXT NOT NULL DEFAULT 'medium',
+  icon_colour TEXT,
+  footer_rule TEXT,
   favicon_path   TEXT,
   -- A photo for cards whose holder has none: the same two copies a contact
   -- gets, because it lands in the same two places (the page and the .vcf).

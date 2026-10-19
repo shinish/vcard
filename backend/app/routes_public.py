@@ -113,7 +113,10 @@ def fetch(public_id: str):
             "co.logo_position AS company_logo_position, co.logo_scale AS company_logo_scale, "
             "co.language AS company_language, co.wallpaper_path AS company_wallpaper, "
             "co.wallpaper_fit AS company_wallpaper_fit, co.font AS company_font, "
-            "co.type_scale AS company_type_scale, "
+            "co.type_scale AS company_type_scale, co.cover_path AS company_cover, "
+            "co.photo_shape AS company_photo_shape, co.photo_align AS company_photo_align, "
+            "co.photo_size AS company_photo_size, co.icon_colour AS company_icon_colour, "
+            "co.footer_rule AS company_footer_rule, "
             "co.show_qr AS company_show_qr, co.show_qr_download AS company_show_qr_download, "
             "co.favicon_path AS company_favicon, co.require_consent AS company_consent, "
             "co.public_sharing AS company_public, co.allow_indexing AS company_indexing, "
@@ -391,6 +394,18 @@ def company_favicon(public_id: str):
     return FileResponse(path, media_type="image/png")
 
 
+@router.get("/{public_id}/cover.jpg")
+def card_cover(public_id: str):
+    """The banner across the head of the card."""
+    row, _ = fetch(public_id)
+    if not row["company_cover"]:
+        raise HTTPException(404, "No banner")
+    path = UPLOADS / row["company_cover"]
+    if not path.exists():
+        raise HTTPException(404, "No banner")
+    return FileResponse(path, media_type="image/jpeg")
+
+
 @router.get("/{public_id}/wallpaper.jpg")
 def card_wallpaper(public_id: str):
     row, _ = fetch(public_id)
@@ -460,6 +475,14 @@ def get_card(public_id: str, request: Request, s: str | None = None, preview: in
         "language": row["company_language"] or "en",
         "font": row["company_font"] or "poppins",
         "type_scale": row["company_type_scale"] or "normal",
+        "cover_url": (
+            f"/api/public/{public_id}/cover.jpg" if row["company_cover"] else None
+        ),
+        "photo_shape": row["company_photo_shape"] or "square",
+        "photo_align": row["company_photo_align"] or "left",
+        "photo_size": row["company_photo_size"] or "medium",
+        "icon_colour": row["company_icon_colour"],
+        "footer_rule": row["company_footer_rule"],
         "wallpaper_url": (
             f"/api/public/{public_id}/wallpaper.jpg" if row["company_wallpaper"] else None
         ),

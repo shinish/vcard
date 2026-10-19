@@ -173,6 +173,14 @@ DEFAULT_FONT = "poppins"
 TYPE_SCALES = ("compact", "normal", "large", "xl")
 DEFAULT_TYPE_SCALE = "normal"
 
+# The card holder's photo: how it is cut, where it sits, how big it runs.
+PHOTO_SHAPES = ("square", "circle")
+DEFAULT_PHOTO_SHAPE = "square"
+PHOTO_ALIGNS = ("left", "center", "right")
+DEFAULT_PHOTO_ALIGN = "left"
+PHOTO_SIZES = ("small", "medium", "large")
+DEFAULT_PHOTO_SIZE = "medium"
+
 # A company may carry a small palette rather than a single accent.
 MAX_ACCENTS = 6
 

@@ -1724,3 +1724,68 @@ def test_a_card_downloads_as_one_page_of_pdf(seeded):
     spill = TestClient(app).get(f"/api/public/{crowded.json()['public_id']}/card.pdf")
     assert spill.status_code == 200
     assert re.findall(rb"/Count\s+(\d+)", spill.content) == [b"1"], "overflowed onto a second page"
+
+
+def test_the_banner_and_the_background_are_two_different_pictures(seeded):
+    """One dresses the head of the card, the other the page the card sits on.
+    They used to be the same upload, so choosing a backdrop changed the card."""
+    admin = sign_in("root", "super-secret-pw")
+    made = admin.patch(
+        f"/api/admin/companies/{seeded['Globex']}",
+        data={"name": "Globex", "theme": "wallpaper"},
+        files={
+            "wallpaper": ("w.jpg", jpeg_bytes(), "image/jpeg"),
+            "cover": ("c.jpg", jpeg_bytes(), "image/jpeg"),
+        },
+    )
+    assert made.status_code == 200, made.text
+    stored = admin.get(f"/api/admin/companies/{seeded['Globex']}").json()
+    assert stored["wallpaper_path"] != stored["cover_path"], "one upload overwrote the other"
+    assert admin.get(f"/api/admin/companies/{seeded['Globex']}/cover.jpg").status_code == 200
+
+
+def test_photo_and_colour_choices_are_kept_and_checked(seeded):
+    admin = sign_in("root", "super-secret-pw")
+    cid = seeded["Acme Ltd"]
+    saved = admin.patch(
+        f"/api/admin/companies/{cid}",
+        data={
+            "name": "Acme Ltd",
+            "photo_shape": "circle",
+            "photo_align": "center",
+            "photo_size": "large",
+            "icon_colour": "#1E90FF",
+            "footer_rule": "#AABBCC",
+        },
+    )
+    assert saved.status_code == 200, saved.text
+    got = admin.get(f"/api/admin/companies/{cid}").json()
+    assert got["photo_shape"] == "circle"
+    assert got["photo_align"] == "center"
+    assert got["photo_size"] == "large"
+    assert got["icon_colour"] == "#1e90ff"
+    assert got["footer_rule"] == "#aabbcc"
+
+    # the card page is handed the same answers
+    person = admin.post(
+        "/api/admin/contacts", data={"first_name": "Shown", "company_id": cid}
+    ).json()
+    card = TestClient(app).get(f"/api/public/{person['public_id']}").json()["company"]
+    assert card["photo_shape"] == "circle"
+    assert card["icon_colour"] == "#1e90ff"
+    assert card["footer_rule"] == "#aabbcc"
+
+    # and nonsense is refused rather than becoming a class name or a style
+    for bad in ({"photo_shape": "triangle"}, {"photo_align": "sideways"},
+                {"photo_size": "huge"}, {"icon_colour": "red; background:url(x)"}):
+        refused = admin.patch(f"/api/admin/companies/{cid}", data={"name": "Acme Ltd", **bad})
+        assert refused.status_code == 422, f"{bad} was accepted"
+
+    # empty clears them back to following the palette
+    cleared = admin.patch(
+        f"/api/admin/companies/{cid}",
+        data={"name": "Acme Ltd", "icon_colour": "", "footer_rule": ""},
+    )
+    assert cleared.status_code == 200, cleared.text
+    after = admin.get(f"/api/admin/companies/{cid}").json()
+    assert after["icon_colour"] is None and after["footer_rule"] is None
