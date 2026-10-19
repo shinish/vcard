@@ -8,10 +8,12 @@ proving you know the current password.
 
 import hashlib
 import io
+import json
 import os
 import pathlib
 import tempfile
 import time
+import zipfile
 
 import pytest
 from PIL import Image
@@ -1477,3 +1479,96 @@ def test_exchange_sends_the_visitor_to_the_card_holder(seeded, monkeypatch):
         anon.post(url, json={"name": "Lead Buyer", "email": "lead@buyer.test"})
     capped = anon.post(url, json={"name": "Lead Buyer", "email": "lead@buyer.test"})
     assert capped.status_code == 429
+
+
+def test_a_company_survives_a_zip_round_trip(seeded):
+    """Export one company, import it back, and get a second company that
+    stands on its own — including the pictures, which export.json cannot
+    carry at all."""
+    admin = sign_in("root", "super-secret-pw")
+    made = admin.post(
+        "/api/admin/companies",
+        data={"name": "Carryall Ltd", "theme": "gradient", "accents": '["#1E90FF"]'},
+        files={"logo": ("logo.png", png_bytes(), "image/png")},
+    )
+    assert made.status_code == 201, made.text
+    company = made.json()["id"]
+
+    person = admin.post(
+        "/api/admin/contacts",
+        data={
+            "first_name": "Rosa",
+            "last_name": "Vega",
+            "company_id": company,
+            "fields": '[{"kind":"email","label":"work","value":"rosa@example.com"}]',
+        },
+        files={"photo": ("p.jpg", jpeg_bytes(), "image/jpeg")},
+    )
+    assert person.status_code == 201, person.text
+    was = person.json()["public_id"]
+
+    bundle = admin.get(f"/api/admin/export.zip?company_id={company}")
+    assert bundle.status_code == 200, bundle.text
+    names = zipfile.ZipFile(io.BytesIO(bundle.content)).namelist()
+    assert "company.json" in names
+    assert [n for n in names if n.startswith("files/")], names
+
+    back = admin.post(
+        "/api/admin/import.zip",
+        files={"file": ("carryall.zip", bundle.content, "application/zip")},
+    )
+    assert back.status_code == 201, back.text
+    [copy] = back.json()["companies"]
+    assert copy["id"] != company
+    # imported back into the installation it came from, so it is marked a copy
+    # rather than refused for colliding on name and branch
+    assert copy["name"] == "Carryall Ltd (copy)"
+    # the live company keeps its slug and its cards keep their urls
+    assert copy["slug"] != "carryall-ltd"
+    assert copy["people"] == 1
+
+    fresh = admin.get(f"/api/admin/export.json?company_id={copy['id']}").json()["companies"][0]
+    assert fresh["theme"] == "gradient"
+    assert fresh["accents"] == ["#1e90ff"]
+    assert fresh["logo_path"] == f"logo-{copy['id']}.png"
+    [rosa] = fresh["people"]
+    assert rosa["public_id"] != was
+    assert rosa["photo_path"] == f"{rosa['public_id']}.jpg"
+    assert [f["value"] for f in rosa["fields"]] == ["rosa@example.com"]
+
+    # named is not enough: the pictures are really on disk and really served
+    assert admin.get(f"/api/admin/companies/{copy['id']}/logo.png").status_code == 200
+    assert admin.get(f"/api/public/{rosa['public_id']}/photo.jpg").status_code == 200
+
+
+def test_an_import_cannot_write_outside_the_uploads_folder(seeded):
+    """A zip is supplied by whoever uploads it, so a member that climbs out of
+    the folder must not be honoured."""
+    admin = sign_in("root", "super-secret-pw")
+    uploads = pathlib.Path(os.environ["VCARD_UPLOADS"])
+    escaped = uploads.parent / "escaped.png"
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as archive:
+        archive.writestr(
+            "company.json",
+            json.dumps(
+                {
+                    "companies": [
+                        {
+                            "name": "Sneaky Ltd",
+                            "logo_path": "../../escaped.png",
+                            "media": [],
+                            "people": [],
+                        }
+                    ]
+                }
+            ),
+        )
+        archive.writestr("files/../../escaped.png", b"not a picture")
+
+    res = admin.post(
+        "/api/admin/import.zip", files={"file": ("x.zip", buf.getvalue(), "application/zip")}
+    )
+    assert res.status_code == 201, res.text
+    assert not escaped.exists()

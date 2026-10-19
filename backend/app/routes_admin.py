@@ -9,12 +9,14 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import hmac
+import io
 import json
 import re
 import secrets
 import shutil
 import sqlite3
 import tempfile
+import zipfile
 from datetime import UTC, date, datetime, timedelta
 from html import escape
 from pathlib import Path
@@ -49,6 +51,7 @@ from .contacts import (
     update_contact,
 )
 from .db import connect
+from .ids import new_public_id
 from .fields import (
     COMPANY_DETAILS,
     DEFAULT_FONT,
@@ -63,6 +66,7 @@ from .fields import (
     MAX_ACCENTS,
     MAX_LOGO_SCALE,
     MIN_LOGO_SCALE,
+    SINGLE,
     THEMES,
     WALLPAPER_FITS,
 )
@@ -1193,12 +1197,12 @@ async def write_settings(request: Request, user: CurrentUser):
     return app_settings.public()
 
 
-@router.get("/export.json")
-def export_everything(user: CurrentUser, company_id: int | None = None):
-    """Everything about one company, or all of them, as one JSON document.
+def _export_payload(company_id: int | None) -> dict:
+    """The data behind both exports.
 
-    Cards, their fields and their counts — the data, not the pictures. The
-    pictures are files on disk, which is what the database backup is for.
+    Cards, their fields, their counts and the company's showcase. Pictures are
+    files on disk, so only their names appear here; export.zip carries the
+    files themselves.
     """
     where = "" if company_id is None else " WHERE co.id = ?"
     args: tuple = () if company_id is None else (company_id,)
@@ -1224,8 +1228,265 @@ def export_everything(user: CurrentUser, company_id: int | None = None):
                 }
                 person = {k: row[k] for k in row.keys() if k != "password_hash"}
                 people.append({**person, "fields": fields, "counts": counts})
-            out.append({**dict(co), "accents": as_palette(co["accents"]), "people": people})
+            media = [
+                dict(m)
+                for m in conn.execute(
+                    "SELECT kind, path, url, caption, position FROM company_media "
+                    "WHERE company_id = ? ORDER BY position, id",
+                    (co["id"],),
+                )
+            ]
+            out.append(
+                {
+                    **dict(co),
+                    "accents": as_palette(co["accents"]),
+                    "media": media,
+                    "people": people,
+                }
+            )
     return {"exported_at": datetime.now(UTC).isoformat(), "companies": out}
+
+
+@router.get("/export.json")
+def export_everything(user: CurrentUser, company_id: int | None = None):
+    """Everything about one company, or all of them, as one JSON document.
+
+    The data, not the pictures. export.zip carries both.
+    """
+    return _export_payload(company_id)
+
+
+# The five company pictures, and the name each takes once imported. Keyed by
+# column so one loop can restore them and write the paths back.
+COMPANY_PICTURES = (
+    ("logo_path", "logo-{id}.png"),
+    ("wallpaper_path", "wall-{id}.jpg"),
+    ("favicon_path", "icon-{id}.png"),
+    ("photo_path", "photo-{id}.jpg"),
+    ("photo_small_path", "photo-{id}-s.jpg"),
+)
+
+
+def _picture_names(payload: dict) -> set[str]:
+    """Every upload the payload refers to, by file name."""
+    names: set[str] = set()
+    for co in payload["companies"]:
+        for column, _ in COMPANY_PICTURES:
+            if co.get(column):
+                names.add(str(co[column]))
+        for item in co.get("media") or []:
+            if item.get("path"):
+                names.add(str(item["path"]))
+        for person in co["people"]:
+            for column in ("photo_path", "photo_small_path"):
+                if person.get(column):
+                    names.add(str(person[column]))
+    return names
+
+
+@router.get("/export.zip")
+def export_zip(user: CurrentUser, company_id: int | None = None):
+    """The data and the pictures together, to carry to another installation."""
+    payload = _export_payload(company_id)
+    if not payload["companies"]:
+        raise HTTPException(404, "Nothing to export")
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("company.json", json.dumps(payload, indent=2, ensure_ascii=False))
+        for name in sorted(_picture_names(payload)):
+            path = UPLOADS / name
+            # A row can still name a file that has gone from disk. Leaving it
+            # out beats refusing to export; the import treats a picture that is
+            # missing from the zip the same as a card that never had one.
+            if path.is_file():
+                archive.write(path, f"files/{name}")
+    stem = slugify(str(payload["companies"][0]["name"])) if company_id else "all-companies"
+    return Response(
+        buf.getvalue(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{stem}.zip"'},
+    )
+
+
+def _unique_name(conn: sqlite3.Connection, name: str, branch: str) -> str:
+    """No two companies may share a name and a branch.
+
+    Importing into the installation the export came from is a deliberate copy
+    — duplicating a company to use as a template — so it is marked as one
+    rather than refused. Importing somewhere else, which is the usual reason,
+    finds nothing in the way and keeps the name exactly.
+    """
+
+    def taken(candidate: str) -> bool:
+        return (
+            conn.execute(
+                "SELECT 1 FROM companies WHERE name = ? AND branch = ?", (candidate, branch)
+            ).fetchone()
+            is not None
+        )
+
+    if not taken(name):
+        return name
+    candidate, n = f"{name} (copy)", 2
+    while taken(candidate):
+        candidate, n = f"{name} (copy {n})", n + 1
+    return candidate
+
+
+def _unique_slug(conn: sqlite3.Connection, base: str) -> str:
+    slug, n = base, 2
+    while conn.execute("SELECT 1 FROM companies WHERE slug = ?", (slug,)).fetchone():
+        slug, n = f"{base}-{n}", n + 1
+    return slug
+
+
+def _restore(archive: zipfile.ZipFile, stored: object, target: str) -> str | None:
+    """Copy one picture out of the zip under the name this install uses.
+
+    Only the base name of the stored path is honoured. A zip is supplied by
+    whoever is uploading it, and a member named ../../something must never be
+    able to write outside the uploads directory.
+    """
+    if not stored:
+        return None
+    try:
+        data = archive.read(f"files/{Path(str(stored)).name}")
+    except KeyError:
+        return None  # named in the data, absent from the zip
+    (UPLOADS / target).write_bytes(data)
+    return target
+
+
+def _import_company(co: dict, archive: zipfile.ZipFile) -> dict:
+    """One company out of an export, created fresh."""
+    with connect() as conn:
+        branch = str(co.get("branch") or "")
+        co = {**co, "name": _unique_name(conn, str(co.get("name") or "Company"), branch)}
+        columns = [r[1] for r in conn.execute("PRAGMA table_info(companies)")]
+        # created_at is set below: the copy is made now, whatever the original
+        # was. slug is minted, and the pictures are written after the row is.
+        skip = {"id", "slug", "created_at", "updated_at", *(c for c, _ in COMPANY_PICTURES)}
+        carried: list[str] = []
+        values: list[object] = []
+        for column in columns:
+            if column in skip:
+                continue
+            value = co.get(column)
+            if column == "accents":
+                kept = [v for v in (value or []) if isinstance(v, str)]
+                value = json.dumps(kept) if kept else None
+            # A column the export did not carry is left out of the INSERT so
+            # this schema's own default applies. Writing None instead fails
+            # every NOT NULL column that has one, which is most of the
+            # switches and branch.
+            if value is None:
+                continue
+            carried.append(column)
+            values.append(value)
+
+        slug = _unique_slug(conn, slugify(str(co["name"]), branch))
+        now = datetime.now(UTC).isoformat()
+        marks = ", ".join(["?"] * (len(carried) + 2))
+        cur = conn.execute(
+            f"INSERT INTO companies (slug, created_at, {', '.join(carried)}) "  # noqa: S608
+            f"VALUES ({marks})",
+            (slug, now, *values),
+        )
+        company_id = cur.lastrowid
+
+        for column, pattern in COMPANY_PICTURES:
+            written = _restore(archive, co.get(column), pattern.format(id=company_id))
+            if written:
+                conn.execute(
+                    f"UPDATE companies SET {column} = ? WHERE id = ?",  # noqa: S608
+                    (written, company_id),
+                )
+
+        people = 0
+        for person in co.get("people") or []:
+            public_id = new_public_id()
+            cur = conn.execute(
+                "INSERT INTO contacts "
+                f"(public_id, company_id, created_at, updated_at, {', '.join(SINGLE)}) "  # noqa: S608
+                f"VALUES (?, ?, ?, ?, {', '.join(['?'] * len(SINGLE))})",
+                (public_id, company_id, now, now, *(person.get(c) for c in SINGLE)),
+            )
+            contact_id = cur.lastrowid
+            conn.executemany(
+                "INSERT INTO contact_fields (contact_id, kind, label, value, position) "
+                "VALUES (?, ?, ?, ?, ?)",
+                [
+                    (
+                        contact_id,
+                        f.get("kind"),
+                        f.get("label"),
+                        f.get("value"),
+                        f.get("position") or 0,
+                    )
+                    for f in person.get("fields") or []
+                ],
+            )
+            display = _restore(archive, person.get("photo_path"), f"{public_id}.jpg")
+            embed = _restore(archive, person.get("photo_small_path"), f"{public_id}-s.jpg")
+            if display or embed:
+                conn.execute(
+                    "UPDATE contacts SET photo_path = ?, photo_small_path = ? WHERE id = ?",
+                    (display, embed, contact_id),
+                )
+            people += 1
+
+        for item in co.get("media") or []:
+            cur = conn.execute(
+                "INSERT INTO company_media (company_id, kind, caption, url, position) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    company_id,
+                    item.get("kind") or "image",
+                    item.get("caption"),
+                    item.get("url"),
+                    item.get("position") or 0,
+                ),
+            )
+            written = _restore(archive, item.get("path"), f"media-{cur.lastrowid}.jpg")
+            if written:
+                conn.execute(
+                    "UPDATE company_media SET path = ? WHERE id = ?", (written, cur.lastrowid)
+                )
+    return {"id": company_id, "slug": slug, "name": co.get("name"), "people": people}
+
+
+@router.post("/import.zip", status_code=201)
+async def import_zip(request: Request, user: CurrentUser):
+    """Read companies out of an export and create them afresh.
+
+    Always new. An import never merges into an existing company, because a
+    merge has to decide which card is "the same" card, and deciding wrong
+    overwrites someone's work with no way back. Slugs and public ids are
+    minted here too, so an import cannot take over a URL that is already live.
+
+    Counts are not restored: they are things real people did, and inventing
+    them would quietly poison the analytics.
+    """
+    form = await request.form()
+    upload = form.get("file")
+    if not isinstance(upload, UploadFile):
+        raise HTTPException(422, "Attach the zip as 'file'")
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(await upload.read()))
+    except zipfile.BadZipFile as e:
+        raise HTTPException(422, "That is not a zip file") from e
+    with archive:
+        try:
+            payload = json.loads(archive.read("company.json"))
+        except KeyError as e:
+            raise HTTPException(422, "The zip has no company.json in it") from e
+        except ValueError as e:
+            raise HTTPException(422, "company.json is not readable JSON") from e
+        companies = payload.get("companies")
+        if not isinstance(companies, list) or not companies:
+            raise HTTPException(422, "company.json names no companies")
+        made = [_import_company(co, archive) for co in companies if isinstance(co, dict)]
+    return {"companies": made}
 
 
 @router.get("/backup.db")

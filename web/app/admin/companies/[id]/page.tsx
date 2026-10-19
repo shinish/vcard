@@ -1395,10 +1395,17 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                 <section id="data" className="surface p-6">
                   <h2 className="font-display text-lg font-bold">Data</h2>
                   <p className="mt-1 text-sm text-ink-soft">
-                    Everything this company holds, in a file you keep. The export is the data;
-                    the backup is the whole database, pictures aside.
+                    Everything this company holds, in a file you keep. The zip carries the
+                    pictures as well and can be imported again, here or on another
+                    installation; the JSON is the data alone. Importing is on the Settings
+                    page, because an import always makes a new company rather than changing
+                    this one.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
+                    <a href={`/api/admin/export.zip?company_id=${id}`} download className="btn">
+                      <Icon name="download" className="size-4" />
+                      Export this company (ZIP, with pictures)
+                    </a>
                     <a href={`/api/admin/export.json?company_id=${id}`} download className="btn">
                       <Icon name="download" className="size-4" />
                       Export this company (JSON)

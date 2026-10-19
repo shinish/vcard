@@ -58,6 +58,33 @@ export default function SettingsPage() {
   const [test, setTest] = useState<string | null>(null);
   const [mailTo, setMailTo] = useState("");
   const [mailResult, setMailResult] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
+
+  async function importZip(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // so picking the same file twice still fires
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const made = await apiJson<{ companies: { name: string; people: number }[] }>(
+        "/api/admin/import.zip",
+        { method: "POST", body },
+      );
+      setImportResult(
+        made.companies
+          .map((c) => `${c.name} — ${c.people} ${c.people === 1 ? "card" : "cards"}`)
+          .join(", ") || "Nothing in that file.",
+      );
+    } catch (cause) {
+      setImportResult((cause as Error).message);
+    } finally {
+      setImporting(false);
+    }
+  }
 
   function load() {
     apiJson<Settings>("/api/admin/settings")
@@ -419,11 +446,14 @@ export default function SettingsPage() {
         <section className="surface p-6">
           <h2 className="font-display text-lg font-bold">Data</h2>
           <p className="mt-1 text-sm text-ink-soft">
-            Everything, in a file you keep. The export is the data as JSON; the backup is the
+            Everything, in a file you keep. The zip carries the pictures as well and is the
+            one you can import again; the JSON is the data alone, and the backup is the
             database itself, taken with SQLite&rsquo;s own backup so it cannot come out torn.
-            Neither includes the uploaded pictures — those are files on the server.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
+            <a href="/api/admin/export.zip" download className="btn">
+              Export everything (ZIP, with pictures)
+            </a>
             <a href="/api/admin/export.json" download className="btn">
               Export everything (JSON)
             </a>
@@ -431,6 +461,29 @@ export default function SettingsPage() {
               Download a database backup
             </a>
           </div>
+
+          <h3 className="mt-6 font-display text-base font-bold">Import a zip</h3>
+          <p className="mt-1 max-w-prose text-sm text-ink-soft">
+            Reads an exported zip back in. It always creates a new company and never changes
+            an existing one, so nothing you already have can be overwritten. Cards come back
+            with new addresses, and a zip from this installation arrives marked as a copy.
+            Visit counts are not restored — they record what real people did.
+          </p>
+          <label className="mt-3 inline-flex">
+            <input
+              type="file"
+              accept=".zip,application/zip"
+              onChange={importZip}
+              disabled={importing}
+              className="block text-sm file:mr-3 file:rounded-full file:border-0 file:bg-wash file:px-4 file:py-2 file:text-sm file:font-semibold"
+            />
+          </label>
+          {importing ? <p className="mt-2 text-sm text-ink-soft">Reading the file…</p> : null}
+          {importResult ? (
+            <p aria-live="polite" className="mt-2 text-sm font-semibold">
+              {importResult}
+            </p>
+          ) : null}
         </section>
 
         {error ? (
