@@ -69,6 +69,20 @@ THEMES = (
     "creative",
     "grid",        # Tech
     "wallpaper",   # Custom: your own picture
+    "dots",        # Halftone
+    "topo",        # Contour
+    "stripes",     # Bands
+    "aurora",
+    "blueprint",
+    "carbon",
+    "linen",
+    "horizon",
+    "noir",
+    "terrazzo",
+    "neon",
+    "arc",
+    # Offered before the set above was named; still valid, so a company that
+    # picked one keeps it rather than being quietly moved.
     "rays",
     "solid",
 )

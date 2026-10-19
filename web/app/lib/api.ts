@@ -109,15 +109,27 @@ export const THEMES = [
   { key: "creative", label: "Creative", hint: "Bold and unique" },
   { key: "grid", label: "Tech", hint: "Futuristic design" },
   { key: "wallpaper", label: "Custom", hint: "A picture you upload" },
+  { key: "dots", label: "Halftone", hint: "A printer's dot texture" },
+  { key: "topo", label: "Contour", hint: "Height lines off a map" },
+  { key: "stripes", label: "Bands", hint: "Wide diagonal stripes, both your colours" },
+  { key: "aurora", label: "Aurora", hint: "Dark, with colour low on the sky" },
+  { key: "blueprint", label: "Blueprint", hint: "Drafting paper and fine rules" },
+  { key: "carbon", label: "Carbon", hint: "Dark woven fibre" },
+  { key: "linen", label: "Linen", hint: "Warm paper with a tooth" },
+  { key: "horizon", label: "Horizon", hint: "A banded sky in your colour" },
+  { key: "noir", label: "Noir", hint: "Greyscale, so the logo carries the colour" },
+  { key: "terrazzo", label: "Terrazzo", hint: "Chips of colour in pale stone" },
+  { key: "neon", label: "Neon", hint: "A dark grid lit from two corners" },
+  { key: "arc", label: "Arc", hint: "Rings swung out of a corner" },
   // Offered before the set above was named; still valid, so a company that
   // picked one keeps it rather than being quietly moved.
   { key: "rays", label: "Rays", hint: "Accent glow with soft rays" },
   { key: "solid", label: "Solid", hint: "One flat colour, yours" },
 ] as const;
 
-/** The nine the picker shows. The rest stay selectable only for whoever is
- *  already on one. */
-export const OFFERED_THEMES = THEMES.slice(0, 9);
+/** The ones the picker shows. The two legacy keys after them stay selectable
+ *  only for whoever is already on one. */
+export const OFFERED_THEMES = THEMES.slice(0, 21);
 
 /** How an uploaded wallpaper fills the screen. */
 export const WALLPAPER_FITS = [

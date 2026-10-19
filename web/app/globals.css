@@ -373,6 +373,129 @@ h3,
     radial-gradient(55% 50% at 50% 95%, color-mix(in srgb, var(--accent-2) 55%, transparent), transparent 75%);
 }
 
+/* Halftone: a printer's dot field, coarse enough to read as texture. */
+.tpl-dots {
+  background-color: var(--color-wash);
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 38%, transparent) 2px,
+    transparent 2.5px
+  );
+  background-size: 18px 18px;
+}
+
+/* Contour: a map's height lines, centred off the top corner. */
+.tpl-topo {
+  background-color: var(--color-wash);
+  background-image: repeating-radial-gradient(
+    circle at 18% -10%,
+    transparent 0 26px,
+    color-mix(in srgb, var(--accent) 20%, transparent) 26px 28px
+  );
+}
+
+/* Bands: wide diagonal stripes in the company's own two colours. */
+.tpl-stripes {
+  background-color: var(--accent);
+  background-image: repeating-linear-gradient(
+    125deg,
+    var(--accent) 0 64px,
+    var(--accent-2) 64px 128px
+  );
+}
+
+/* Aurora: dark, with three slow blooms of colour low on the sky. */
+.tpl-aurora {
+  background-color: #060a14;
+  background-image:
+    radial-gradient(70% 55% at 20% 85%, color-mix(in srgb, var(--accent) 58%, transparent), transparent 70%),
+    radial-gradient(60% 50% at 75% 95%, color-mix(in srgb, var(--accent-3) 50%, transparent), transparent 72%),
+    radial-gradient(90% 60% at 50% 110%, color-mix(in srgb, var(--accent-2) 42%, transparent), transparent 75%),
+    linear-gradient(180deg, #060a14 0%, #0a1226 100%);
+}
+
+/* Blueprint: drafting paper, fine lines with a heavier one every fifth. */
+.tpl-blueprint {
+  background-color: #0b3a6b;
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.28) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.28) 1px, transparent 1px),
+    linear-gradient(to right, rgb(255 255 255 / 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.1) 1px, transparent 1px);
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+}
+
+/* Carbon: a tight diagonal weave, the way woven fibre catches light. */
+.tpl-carbon {
+  background-color: #12151a;
+  background-image:
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.05) 0 2px, transparent 2px 6px),
+    repeating-linear-gradient(-45deg, rgb(0 0 0 / 0.4) 0 2px, transparent 2px 6px),
+    radial-gradient(90% 70% at 50% 0%, #1c212a 0%, #0e1115 70%);
+}
+
+/* Linen: warm paper with a woven tooth. For a card that wants to feel
+   printed rather than lit. */
+.tpl-linen {
+  background-color: #f3efe7;
+  background-image:
+    repeating-linear-gradient(90deg, rgb(140 120 90 / 0.07) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(0deg, rgb(140 120 90 / 0.07) 0 1px, transparent 1px 4px),
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 65%);
+}
+
+/* Horizon: banded sky, light at the top and the accent gathering below. */
+.tpl-horizon {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 12%, white) 0%,
+    color-mix(in srgb, var(--accent) 38%, white) 38%,
+    var(--accent) 72%,
+    var(--accent-2) 100%
+  );
+}
+
+/* Noir: greyscale on purpose. The one template that ignores the palette,
+   for a card whose colour should come entirely from its logo. */
+.tpl-noir {
+  background-color: #1a1a1a;
+  background-image:
+    linear-gradient(115deg, rgb(255 255 255 / 0.08) 0%, transparent 45%),
+    radial-gradient(100% 80% at 50% 0%, #2c2c2c 0%, #141414 70%);
+}
+
+/* Terrazzo: chips of the company's colours scattered through pale stone. */
+.tpl-terrazzo {
+  background-color: #f6f4ef;
+  background-image:
+    radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--accent) 65%, transparent) 0 4px, transparent 5px),
+    radial-gradient(circle at 72% 58%, color-mix(in srgb, var(--accent-3) 60%, transparent) 0 5px, transparent 6px),
+    radial-gradient(circle at 45% 80%, color-mix(in srgb, var(--accent-2) 45%, transparent) 0 3px, transparent 4px),
+    radial-gradient(circle at 88% 16%, color-mix(in srgb, var(--accent) 40%, transparent) 0 3px, transparent 4px);
+  background-size: 110px 110px, 150px 150px, 90px 90px, 130px 130px;
+}
+
+/* Neon: a dark grid with two lamps burning through it. */
+.tpl-neon {
+  background-color: #080510;
+  background-image:
+    radial-gradient(45% 40% at 15% 20%, color-mix(in srgb, var(--accent) 60%, transparent), transparent 70%),
+    radial-gradient(45% 40% at 85% 80%, color-mix(in srgb, var(--accent-3) 55%, transparent), transparent 70%),
+    linear-gradient(to right, rgb(255 255 255 / 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.07) 1px, transparent 1px);
+  background-size: auto, auto, 34px 34px, 34px 34px;
+}
+
+/* Arc: concentric rings swung out of one corner. */
+.tpl-arc {
+  background-color: var(--color-wash);
+  background-image: repeating-radial-gradient(
+    circle at 100% 0%,
+    color-mix(in srgb, var(--accent) 26%, transparent) 0 2px,
+    transparent 2px 58px
+  );
+}
+
 .tpl-wallpaper {
   background-color: var(--accent);
   background-image: var(--wallpaper);
