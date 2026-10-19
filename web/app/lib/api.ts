@@ -168,7 +168,7 @@ export const LOGO_POSITIONS = [
 export type LogoPosition = (typeof LOGO_POSITIONS)[number];
 export const DEFAULT_LOGO_POSITION: LogoPosition = "top-center";
 export const MIN_LOGO_SCALE = 50;
-export const MAX_LOGO_SCALE = 220;
+export const MAX_LOGO_SCALE = 400;
 export const DEFAULT_LOGO_SCALE = 100;
 
 /** Grid placement classes for each slot. */

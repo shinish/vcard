@@ -119,7 +119,7 @@ DEFAULT_LOGO_POSITION = "top-center"
 # Logo display size as a percentage of the default. Clamped so it cannot be
 # made so large that it swamps the card, or so small it is unreadable.
 MIN_LOGO_SCALE = 50
-MAX_LOGO_SCALE = 220
+MAX_LOGO_SCALE = 400
 DEFAULT_LOGO_SCALE = 100
 
 # Card language, set per company. Arabic also flips the card to right-to-left.

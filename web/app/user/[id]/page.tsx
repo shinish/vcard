@@ -322,7 +322,7 @@ export default async function CardPage({
                 src={`${API}${logoUrl}`}
                 alt={card.company.name}
                 style={{ height: logoHeight }}
-                className="w-auto max-w-[60%] object-contain"
+                className="w-auto max-w-[85%] object-contain"
               />
             </div>
           ) : null}
@@ -593,7 +593,16 @@ export default async function CardPage({
           ) : null}
 
           <p className="mt-auto pt-2 text-center text-[11px] text-ink-soft">
-            truetap.in
+            {/* noopener without noreferrer: the referrer is the point, it is
+                how a visit arriving from someone's card can be recognised. */}
+            <a
+              href="https://truetap.in"
+              target="_blank"
+              rel="noopener"
+              className="underline underline-offset-2"
+            >
+              truetap.in
+            </a>
           </p>
         </div>
       </article>
