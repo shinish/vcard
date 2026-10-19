@@ -25,6 +25,10 @@ KEYS = {
     "zepto_dc": "ZEPTO_DC",
     "mail_from": "MAIL_FROM",
     "mail_from_name": "MAIL_FROM_NAME",
+    # Where a reply should land, when that is not the address the mail was
+    # sent from. Sending from a domain built for sending keeps SPF and DKIM
+    # clean; a person answering still needs a mailbox that receives.
+    "mail_reply_to": "MAIL_REPLY_TO",
     # Who hears about new and changed cards, and which of those to send.
     "notify_to": "NOTIFY_TO",
     "notify_card_created": "NOTIFY_CARD_CREATED",

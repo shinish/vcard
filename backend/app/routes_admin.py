@@ -1153,6 +1153,13 @@ async def write_settings(request: Request, user: CurrentUser):
             raise HTTPException(422, "The from address must be an email address")
         app_settings.put("mail_from", sender)
 
+    # Empty clears it, so replies go back to the from address again.
+    reply_to = str(form.get("mail_reply_to") or "").strip()
+    if reply_to and "@" not in reply_to:
+        raise HTTPException(422, "The reply-to address must be an email address")
+    if "mail_reply_to" in form:
+        app_settings.put("mail_reply_to", reply_to)
+
     sender_name = str(form.get("mail_from_name") or "").strip()
     if sender_name:
         app_settings.put("mail_from_name", sender_name)

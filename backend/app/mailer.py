@@ -59,6 +59,9 @@ def send(to_address: str, to_name: str, subject: str, html: str, text: str) -> N
         "htmlbody": html,
         "textbody": text,
     }
+    reply_to = settings.get("mail_reply_to")
+    if reply_to:
+        payload["reply_to"] = [{"address": reply_to}]
     request = urllib.request.Request(  # noqa: S310 - https, host from a closed list
         endpoint(),
         data=json.dumps(payload).encode(),

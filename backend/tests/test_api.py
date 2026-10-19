@@ -1572,3 +1572,63 @@ def test_an_import_cannot_write_outside_the_uploads_folder(seeded):
     )
     assert res.status_code == 201, res.text
     assert not escaped.exists()
+
+
+def test_a_reply_goes_where_the_mail_can_be_answered(seeded, monkeypatch):
+    """Sending from a domain built for sending keeps SPF and DKIM clean, but a
+    noreply address is a dead end for whoever wants to answer. Reply-to is the
+    way out, and it needs no verifying of its own."""
+    import json as _json
+    import urllib.request
+
+    from app import mailer
+    from app import settings as app_settings
+
+    admin = sign_in("root", "super-secret-pw")
+    saved = admin.patch(
+        "/api/admin/settings",
+        data={
+            "mail_from": "noreply@truetap.in",
+            "mail_reply_to": "info@truestaroman.com",
+            "zepto_token": "test-token",
+        },
+    )
+    assert saved.status_code == 200, saved.text
+    assert admin.get("/api/admin/settings").json()["mail_reply_to"] == "info@truestaroman.com"
+
+    sent = {}
+
+    class Swallowed:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+        def read(self):
+            return b"{}"
+
+    def capture(request, timeout=None):
+        sent["payload"] = _json.loads(request.data)
+        return Swallowed()
+
+    monkeypatch.setattr(urllib.request, "urlopen", capture)
+    mailer.send("someone@example.com", "Someone", "Subject", "<p>hi</p>", "hi")
+
+    assert sent["payload"]["from"]["address"] == "noreply@truetap.in"
+    assert sent["payload"]["reply_to"] == [{"address": "info@truestaroman.com"}]
+
+    # cleared, and replies fall back to the from address
+    admin.patch("/api/admin/settings", data={"mail_reply_to": ""})
+    assert app_settings.get("mail_reply_to") == ""
+    mailer.send("someone@example.com", "Someone", "Subject", "<p>hi</p>", "hi")
+    assert "reply_to" not in sent["payload"]
+
+    admin.patch("/api/admin/settings", data={"mail_from": "", "clear_zepto_token": "1"})
+
+
+def test_a_reply_to_address_must_look_like_one(seeded):
+    admin = sign_in("root", "super-secret-pw")
+    assert admin.patch(
+        "/api/admin/settings", data={"mail_reply_to": "not-an-address"}
+    ).status_code == 422

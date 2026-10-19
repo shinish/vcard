@@ -15,6 +15,7 @@ type Settings = {
   zepto_dc: string;
   mail_from: string;
   mail_from_name: string;
+  mail_reply_to: string;
   notify_to: string;
   notify_card_created: string;
   notify_card_updated: string;
@@ -293,6 +294,20 @@ export default function SettingsPage() {
                 placeholder="TrueTap"
                 className={field}
               />
+            </label>
+            <label className="block space-y-1.5 sm:col-span-2">
+              <span className={labelled}>Reply-to address</span>
+              <input
+                name="mail_reply_to"
+                defaultValue={data.mail_reply_to}
+                placeholder="Leave empty to reply to the from address"
+                className={field}
+              />
+              <span className="block text-xs text-ink-soft">
+                Where an answer goes. Useful when mail is sent from a domain built for
+                sending but someone needs to reply to a mailbox that actually receives.
+                This one needs no verifying.
+              </span>
             </label>
           </div>
 
