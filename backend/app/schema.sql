@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS companies (
   font       TEXT NOT NULL DEFAULT 'poppins',
   type_scale TEXT NOT NULL DEFAULT 'normal',
   cover_path TEXT,
+  card_bg_path TEXT,
   photo_shape TEXT NOT NULL DEFAULT 'square',
   photo_align TEXT NOT NULL DEFAULT 'left',
   photo_size  TEXT NOT NULL DEFAULT 'medium',
@@ -142,11 +143,16 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE TABLE IF NOT EXISTS company_media (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   company_id INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  kind       TEXT NOT NULL CHECK (kind IN ('image','video')),
-  path       TEXT,            -- an uploaded picture
+  kind       TEXT NOT NULL CHECK (kind IN ('image','video','link')),
+  path       TEXT,            -- an uploaded picture, or a link button's icon
   url        TEXT,            -- a video link (YouTube, Vimeo) or a link out
-  caption    TEXT,
-  position   INTEGER NOT NULL DEFAULT 0
+  caption    TEXT,            -- a picture's caption, or a button's label
+  position   INTEGER NOT NULL DEFAULT 0,
+  -- How a link button is drawn. Filled takes the company's first accent;
+  -- unfilled leaves it bare, and a border of 0 means no outline at all, so
+  -- the two together cover a solid button, an outlined one, and plain text.
+  fill       INTEGER NOT NULL DEFAULT 1,
+  border     INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_media_company ON company_media(company_id);
 

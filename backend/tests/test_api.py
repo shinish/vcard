@@ -1789,3 +1789,178 @@ def test_photo_and_colour_choices_are_kept_and_checked(seeded):
     assert cleared.status_code == 200, cleared.text
     after = admin.get(f"/api/admin/companies/{cid}").json()
     assert after["icon_colour"] is None and after["footer_rule"] is None
+
+
+def test_a_link_button_is_added_styled_and_shown_on_the_card(seeded):
+    """A third kind of showcase row: a label, a link, and how it is drawn.
+
+    Pictures and videos share the table, so the checks below also confirm a
+    button does not disturb them and that the ordering stays one list.
+    """
+    admin = sign_in("root", "super-secret-pw")
+    cid = seeded["Acme Ltd"]
+
+    made = admin.post(
+        f"/api/admin/companies/{cid}/media",
+        data={
+            "kind": "link",
+            "caption": "Our Services",
+            "url": "services.example.com",  # no scheme: one is added
+            "fill": "0",
+            "border": "2",
+        },
+        files={"file": ("icon.jpg", jpeg_bytes((240, 240)), "image/jpeg")},
+    )
+    assert made.status_code == 201, made.text
+
+    listed = admin.get(f"/api/admin/companies/{cid}/media").json()
+    button = next(m for m in listed if m["kind"] == "link")
+    assert button["caption"] == "Our Services"
+    assert button["url"] == "https://services.example.com", "a bare host needs a scheme"
+    assert button["fill"] is False
+    assert button["border"] == 2
+    assert button["image_url"], "the picture inside the button was not kept"
+
+    # the public card is handed the same answers, under the same showcase
+    person = admin.post(
+        "/api/admin/contacts", data={"first_name": "Linked", "company_id": cid}
+    ).json()
+    public = TestClient(app)
+    shown = public.get(f"/api/public/{person['public_id']}").json()["company"]["media"]
+    on_card = next(m for m in shown if m["kind"] == "link")
+    assert on_card["url"] == "https://services.example.com"
+    assert on_card["border"] == 2 and on_card["fill"] is False
+    assert public.get(on_card["image_url"]).status_code == 200, "the icon is not served"
+
+    # a button with nowhere to go, or no label, is refused rather than drawn
+    for bad in (
+        {"kind": "link", "caption": "Nowhere"},
+        {"kind": "link", "url": "https://example.com"},
+        {"kind": "link", "caption": "Thick", "url": "https://e.com", "border": "4"},
+        {"kind": "link", "caption": "Odd", "url": "https://e.com", "border": "-1"},
+    ):
+        refused = admin.post(f"/api/admin/companies/{cid}/media", data=bad)
+        assert refused.status_code == 422, f"{bad} was accepted"
+
+    # a picture still needs its upload, and still ignores the button styling
+    plain = admin.post(
+        f"/api/admin/companies/{cid}/media",
+        data={"kind": "image", "caption": "A job"},
+        files={"file": ("p.jpg", jpeg_bytes(), "image/jpeg")},
+    )
+    assert plain.status_code == 201, plain.text
+    assert admin.post(
+        f"/api/admin/companies/{cid}/media", data={"kind": "image", "caption": "No file"}
+    ).status_code == 422
+
+
+def test_link_buttons_survive_an_export_and_import(seeded):
+    """The button's look travels with the company, not just its link."""
+    admin = sign_in("root", "super-secret-pw")
+    cid = seeded["Globex"]
+    assert admin.post(
+        f"/api/admin/companies/{cid}/media",
+        data={
+            "kind": "link",
+            "caption": "Awards & Recognition",
+            "url": "https://awards.example.com",
+            "fill": "1",
+            "border": "3",
+        },
+    ).status_code == 201
+
+    archive = admin.get("/api/admin/export.zip")
+    assert archive.status_code == 200, archive.text
+    restored = admin.post(
+        "/api/admin/import.zip",
+        files={"file": ("export.zip", archive.content, "application/zip")},
+    )
+    assert restored.status_code == 201, restored.text
+
+    copies = [
+        c for c in admin.get("/api/admin/companies").json() if c["name"].startswith("Globex")
+    ]
+    assert len(copies) >= 2, "the import did not land"
+    for company in copies:
+        media = admin.get(f"/api/admin/companies/{company['id']}/media").json()
+        button = next((m for m in media if m["kind"] == "link"), None)
+        assert button is not None, f"{company['name']} lost its button"
+        assert button["caption"] == "Awards & Recognition"
+        assert button["fill"] is True
+        assert button["border"] == 3
+
+
+def test_the_card_gets_a_background_of_its_own(seeded):
+    """Three pictures, three jobs: the banner heads the card, the wallpaper
+    fills the screen around it, and this one fills the card itself."""
+    admin = sign_in("root", "super-secret-pw")
+    cid = seeded["Acme Ltd"]
+    saved = admin.patch(
+        f"/api/admin/companies/{cid}",
+        data={"name": "Acme Ltd"},
+        files={"card_bg": ("bg.jpg", jpeg_bytes(), "image/jpeg")},
+    )
+    assert saved.status_code == 200, saved.text
+
+    stored = admin.get(f"/api/admin/companies/{cid}").json()
+    assert stored["card_bg_path"], "the background was not kept"
+    assert stored["card_bg_path"] != stored["wallpaper_path"], "it overwrote the wallpaper"
+    assert stored["card_bg_path"] != stored["cover_path"], "it overwrote the banner"
+    assert admin.get(f"/api/admin/companies/{cid}/card-bg.jpg").status_code == 200
+
+    person = admin.post(
+        "/api/admin/contacts", data={"first_name": "Backed", "company_id": cid}
+    ).json()
+    public = TestClient(app)
+    card = public.get(f"/api/public/{person['public_id']}").json()["company"]
+    assert card["card_bg_url"], "the card was not told about it"
+    assert public.get(card["card_bg_url"]).status_code == 200
+
+    # and it can be taken off again without touching the other two
+    cleared = admin.patch(
+        f"/api/admin/companies/{cid}", data={"name": "Acme Ltd", "remove_card_bg": "1"}
+    )
+    assert cleared.status_code == 200, cleared.text
+    after = admin.get(f"/api/admin/companies/{cid}").json()
+    assert after["card_bg_path"] is None
+    assert admin.get(f"/api/admin/companies/{cid}/card-bg.jpg").status_code == 404
+
+
+def test_every_company_picture_survives_an_export_and_import(seeded):
+    """The banner and the card background were absent from the archive, so an
+    import rebuilt a company with its design half missing."""
+    admin = sign_in("root", "super-secret-pw")
+    # Its own company, under a name no other test uses: the archive holds
+    # every company, and the copy has to be found again by name.
+    made = admin.post("/api/admin/companies", data={"name": "Pictured Ltd"})
+    assert made.status_code in (200, 201), made.text
+    cid = made.json()["id"]
+    assert admin.patch(
+        f"/api/admin/companies/{cid}",
+        data={"name": "Pictured Ltd"},
+        files={
+            "logo": ("l.png", jpeg_bytes((300, 300)), "image/png"),
+            "wallpaper": ("w.jpg", jpeg_bytes(), "image/jpeg"),
+            "cover": ("c.jpg", jpeg_bytes(), "image/jpeg"),
+            "card_bg": ("b.jpg", jpeg_bytes(), "image/jpeg"),
+        },
+    ).status_code == 200
+
+    archive = admin.get("/api/admin/export.zip")
+    assert archive.status_code == 200, archive.text
+    restored = admin.post(
+        "/api/admin/import.zip",
+        files={"file": ("export.zip", archive.content, "application/zip")},
+    )
+    assert restored.status_code == 201, restored.text
+
+    fresh = next(
+        c
+        for c in admin.get("/api/admin/companies").json()
+        if c["name"].startswith("Pictured Ltd") and c["id"] != cid
+    )
+    got = admin.get(f"/api/admin/companies/{fresh['id']}").json()
+    for column in ("logo_path", "wallpaper_path", "cover_path", "card_bg_path"):
+        assert got[column], f"{column} did not survive the round trip"
+    assert admin.get(f"/api/admin/companies/{fresh['id']}/card-bg.jpg").status_code == 200
+    assert admin.get(f"/api/admin/companies/{fresh['id']}/cover.jpg").status_code == 200

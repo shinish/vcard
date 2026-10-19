@@ -181,6 +181,14 @@ DEFAULT_PHOTO_ALIGN = "left"
 PHOTO_SIZES = ("small", "medium", "large")
 DEFAULT_PHOTO_SIZE = "medium"
 
+# What a company can put in its showcase. A link is a button: a label, a
+# destination, and optionally a small picture to sit inside it.
+MEDIA_KINDS = ("image", "video", "link")
+
+# A link button's outline, in pixels. Zero leaves it with no outline, which
+# together with an unfilled button is how a plain text link is asked for.
+MAX_BUTTON_BORDER = 3
+
 # A company may carry a small palette rather than a single accent.
 MAX_ACCENTS = 6
 

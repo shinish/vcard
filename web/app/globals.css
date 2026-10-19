@@ -574,6 +574,18 @@ h3,
   background-size: cover;
 }
 
+/* A picture inside the card, behind its own content. --card-bg is set inline
+   on the card. The wash over it is what keeps the text readable on a busy
+   photograph; without it a mid-tone picture swallows the smaller type. */
+.contact-card.has-card-bg {
+  background-image:
+    linear-gradient(180deg, rgb(255 255 255 / 0.86), rgb(255 255 255 / 0.92)),
+    var(--card-bg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
 /* "Save as PDF" is the browser's own print dialogue, so the print sheet is
    the PDF: the card alone, without the page behind it or anything to tap. */
 @media print {

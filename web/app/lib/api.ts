@@ -56,13 +56,19 @@ export type SingleField = (typeof SINGLE_FIELDS)[number];
 
 export type ContactField = { kind: Kind; label: string; value: string | AddressValue };
 
-/** A picture or video a company shows on every card it owns. */
+/** A picture, video or link button a company shows on every card it owns.
+ *
+ *  All three are one list in one order. A link reads `caption` as its label
+ *  and `image_url` as the picture inside it; `fill` and `border` are how it
+ *  is drawn, and only a link looks at them. */
 export type Media = {
   id: number;
-  kind: "image" | "video";
+  kind: "image" | "video" | "link";
   caption: string | null;
   url: string | null;
   image_url: string | null;
+  fill: boolean;
+  border: number;
 };
 
 export type Contact = Record<SingleField, string | null> & {
@@ -84,6 +90,7 @@ export type Contact = Record<SingleField, string | null> & {
     font: FontKey;
   type_scale: TypeScaleKey;
   cover_url: string | null;
+  card_bg_url: string | null;
   photo_shape: PhotoShape;
   photo_align: PhotoAlign;
   photo_size: PhotoSize;
@@ -269,6 +276,7 @@ export type Company = {
   font: FontKey;
   type_scale: TypeScaleKey;
   cover_url: string | null;
+  card_bg_url: string | null;
   photo_shape: PhotoShape;
   photo_align: PhotoAlign;
   photo_size: PhotoSize;
@@ -276,6 +284,7 @@ export type Company = {
   footer_rule: string | null;
   wallpaper_path: string | null;
   cover_path: string | null;
+  card_bg_path: string | null;
   wallpaper_fit: WallpaperFit;
   show_qr: boolean | number;
   show_qr_download: boolean | number;

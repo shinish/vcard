@@ -231,6 +231,7 @@ export default async function CardPage({
     font: savedFont,
     type_scale: typeScale,
     cover_url: coverUrl,
+    card_bg_url: cardBgUrl,
     photo_shape: photoShape,
     photo_align: photoAlign,
     photo_size: photoSize,
@@ -248,6 +249,11 @@ export default async function CardPage({
     allow_exchange: allowExchange,
     media,
   } = card.company;
+
+  // A link button is a button, not a thumbnail, so it leaves the showcase
+  // grid and stands on its own below it. Both keep the order they were added.
+  const buttons = media.filter((m) => m.kind === "link" && m.url);
+  const showcase = media.filter((m) => m.kind !== "link");
 
   // Unsaved styling wins only for the designer; everyone else sees what is saved.
   const theme = preview?.theme ?? savedTheme;
@@ -316,7 +322,12 @@ export default async function CardPage({
       <article
         className={`contact-card relative flex w-full flex-col bg-paper lg:max-w-lg lg:rounded-2xl lg:shadow-[var(--shadow-lift)]${
           typeScale && typeScale !== "normal" ? ` card-size-${typeScale}` : ""
-        }`}
+        }${cardBgUrl ? " has-card-bg" : ""}`}
+        style={
+          cardBgUrl
+            ? ({ "--card-bg": `url(${API}${cardBgUrl})` } as React.CSSProperties)
+            : undefined
+        }
       >
         {/* Header band: the company's colours — or its own picture as a cover —
             with the bar that shares or prints the card, and the logo on a line
@@ -523,13 +534,13 @@ export default async function CardPage({
             </section>
           ) : null}
 
-          {media.length ? (
+          {showcase.length ? (
             <section>
               <h2 className="font-display text-xs font-bold uppercase tracking-wider text-ink-soft">
                 {words.showcase}
               </h2>
               <ul className="mt-3 space-y-3">
-                {media.map((item) => {
+                {showcase.map((item) => {
                   const embed = item.kind === "video" && item.url ? embedOf(item.url) : null;
                   return (
                     <li key={item.id} className="overflow-hidden rounded-xl border border-line">
@@ -567,6 +578,40 @@ export default async function CardPage({
                   );
                 })}
               </ul>
+            </section>
+          ) : null}
+
+          {buttons.length ? (
+            // The company's own buttons. No heading: each one is already
+            // labelled, and a word above them would say less than they do.
+            <section className="space-y-2">
+              {buttons.map((item) => (
+                <a
+                  key={item.id}
+                  href={item.url as string}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    backgroundColor: item.fill ? "var(--accent)" : "transparent",
+                    borderStyle: "solid",
+                    borderWidth: `${item.border}px`,
+                    borderColor: "var(--accent)",
+                    color: item.fill ? "#fff" : "var(--accent)",
+                  }}
+                  className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-center text-sm font-semibold"
+                >
+                  {item.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- served by the API
+                    <img
+                      src={`${API}${item.image_url}`}
+                      alt=""
+                      loading="lazy"
+                      className="size-5 shrink-0 object-contain"
+                    />
+                  ) : null}
+                  {item.caption}
+                </a>
+              ))}
             </section>
           ) : null}
 

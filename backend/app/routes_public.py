@@ -12,9 +12,9 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, Response
 
+from . import card_pdf as card_pdf_builder
 from . import mailer, qr, signature, vcf
 from . import settings as app_settings
-from . import card_pdf as card_pdf_builder
 from .auth import is_admin
 from .config import UPLOADS, public_base_url
 from .contacts import field_rows, serialise
@@ -114,6 +114,7 @@ def fetch(public_id: str):
             "co.language AS company_language, co.wallpaper_path AS company_wallpaper, "
             "co.wallpaper_fit AS company_wallpaper_fit, co.font AS company_font, "
             "co.type_scale AS company_type_scale, co.cover_path AS company_cover, "
+            "co.card_bg_path AS company_card_bg, "
             "co.photo_shape AS company_photo_shape, co.photo_align AS company_photo_align, "
             "co.photo_size AS company_photo_size, co.icon_colour AS company_icon_colour, "
             "co.footer_rule AS company_footer_rule, "
@@ -394,6 +395,18 @@ def company_favicon(public_id: str):
     return FileResponse(path, media_type="image/png")
 
 
+@router.get("/{public_id}/card-bg.jpg")
+def card_background(public_id: str):
+    """The picture inside the card, behind its own content."""
+    row, _ = fetch(public_id)
+    if not row["company_card_bg"]:
+        raise HTTPException(404, "No background")
+    path = UPLOADS / row["company_card_bg"]
+    if not path.exists():
+        raise HTTPException(404, "No background")
+    return FileResponse(path, media_type="image/jpeg")
+
+
 @router.get("/{public_id}/cover.jpg")
 def card_cover(public_id: str):
     """The banner across the head of the card."""
@@ -431,7 +444,8 @@ def card_media(public_id: str, media_id: int):
 
 
 def showcase(company_id: int, public_id: str) -> list[dict]:
-    """The company's own pictures and videos, shown on every card it owns."""
+    """The company's own pictures, videos and link buttons, shown on every
+    card it owns."""
     with connect() as conn:
         rows = conn.execute(
             "SELECT * FROM company_media WHERE company_id = ? ORDER BY position, id",
@@ -445,6 +459,8 @@ def showcase(company_id: int, public_id: str) -> list[dict]:
                 "kind": r["kind"],
                 "caption": r["caption"],
                 "url": r["url"],
+                "fill": bool(r["fill"]),
+                "border": r["border"],
                 "image_url": (
                     f"/api/public/{public_id}/media/{r['id']}.jpg" if r["path"] else None
                 ),
@@ -477,6 +493,9 @@ def get_card(public_id: str, request: Request, s: str | None = None, preview: in
         "type_scale": row["company_type_scale"] or "normal",
         "cover_url": (
             f"/api/public/{public_id}/cover.jpg" if row["company_cover"] else None
+        ),
+        "card_bg_url": (
+            f"/api/public/{public_id}/card-bg.jpg" if row["company_card_bg"] else None
         ),
         "photo_shape": row["company_photo_shape"] or "square",
         "photo_align": row["company_photo_align"] or "left",

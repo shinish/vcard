@@ -94,6 +94,44 @@ def _widen_event_kinds(conn: sqlite3.Connection) -> None:
     conn.execute("PRAGMA foreign_keys = ON")
 
 
+def _widen_media_kinds(conn: sqlite3.Connection) -> None:
+    """Let the showcase hold a link button beside its pictures and videos.
+
+    Same story as the event kinds: the list is a CHECK constraint, so the
+    table has to be rebuilt to add to it. Run after the columns are added,
+    because the copy below names them.
+    """
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'company_media'"
+    ).fetchone()
+    if row is None or "'link'" in row[0]:
+        return
+    conn.execute("PRAGMA foreign_keys = OFF")
+    conn.executescript(
+        """
+        CREATE TABLE company_media_rebuilt (
+          id         INTEGER PRIMARY KEY AUTOINCREMENT,
+          company_id INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+          kind       TEXT NOT NULL CHECK (kind IN ('image','video','link')),
+          path       TEXT,
+          url        TEXT,
+          caption    TEXT,
+          position   INTEGER NOT NULL DEFAULT 0,
+          fill       INTEGER NOT NULL DEFAULT 1,
+          border     INTEGER NOT NULL DEFAULT 0
+        );
+        INSERT INTO company_media_rebuilt
+            (id, company_id, kind, path, url, caption, position, fill, border)
+          SELECT id, company_id, kind, path, url, caption, position, fill, border
+            FROM company_media;
+        DROP TABLE company_media;
+        ALTER TABLE company_media_rebuilt RENAME TO company_media;
+        CREATE INDEX IF NOT EXISTS idx_media_company ON company_media(company_id);
+        """
+    )
+    conn.execute("PRAGMA foreign_keys = ON")
+
+
 def _add_missing_columns(conn: sqlite3.Connection, table: str, columns: dict[str, str]) -> None:
     """Bring an existing table up to the current schema without losing rows."""
     present = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
@@ -179,6 +217,10 @@ def init() -> None:
                 # wallpaper, which dresses the page behind it: one is the
                 # card's own design, the other is the room it sits in.
                 "cover_path": "TEXT",
+                # A picture for the card itself, behind its own content. The
+                # wallpaper fills the screen around the card; this fills the
+                # card, so a company can have either, both, or neither.
+                "card_bg_path": "TEXT",
                 "photo_shape": "TEXT NOT NULL DEFAULT 'square'",
                 "photo_align": "TEXT NOT NULL DEFAULT 'left'",
                 "photo_size": "TEXT NOT NULL DEFAULT 'medium'",
@@ -218,6 +260,15 @@ def init() -> None:
         _add_missing_columns(conn, "sessions", {"pending_2fa": "INTEGER NOT NULL DEFAULT 0"})
         _add_missing_columns(conn, "card_events", {"device": "TEXT", "visitor": "TEXT"})
         _widen_event_kinds(conn)
+        _add_missing_columns(
+            conn,
+            "company_media",
+            {
+                "fill": "INTEGER NOT NULL DEFAULT 1",
+                "border": "INTEGER NOT NULL DEFAULT 0",
+            },
+        )
+        _widen_media_kinds(conn)
         _add_missing_columns(
             conn,
             "contacts",

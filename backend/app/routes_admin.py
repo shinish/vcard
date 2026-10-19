@@ -51,7 +51,6 @@ from .contacts import (
     update_contact,
 )
 from .db import connect
-from .ids import new_public_id
 from .fields import (
     COMPANY_DETAILS,
     DEFAULT_FONT,
@@ -68,7 +67,9 @@ from .fields import (
     LANGUAGES,
     LOGO_POSITIONS,
     MAX_ACCENTS,
+    MAX_BUTTON_BORDER,
     MAX_LOGO_SCALE,
+    MEDIA_KINDS,
     MIN_LOGO_SCALE,
     PHOTO_ALIGNS,
     PHOTO_SHAPES,
@@ -78,6 +79,7 @@ from .fields import (
     TYPE_SCALES,
     WALLPAPER_FITS,
 )
+from .ids import new_public_id
 
 # Everything the branding form can set, in the order the SQL below writes it.
 BRAND_COLUMNS = (
@@ -280,6 +282,20 @@ async def store_cover(upload: UploadFile, company_id: int) -> str:
     return name
 
 
+async def store_card_bg(upload: UploadFile, company_id: int) -> str:
+    """The picture inside the card, behind its own content.
+
+    The wallpaper fills the screen around the card and this fills the card,
+    so the two are independent: either, both or neither.
+    """
+    try:
+        name = f"cardbg-{company_id}.jpg"
+        photos.save_wallpaper(await upload.read(), UPLOADS / name)
+    except photos.BadImage as e:
+        raise HTTPException(422, str(e)) from e
+    return name
+
+
 async def store_favicon(upload: UploadFile, company_id: int) -> str:
     try:
         name = f"icon-{company_id}.png"
@@ -309,6 +325,7 @@ async def apply_pictures(form, company_id: int) -> None:
         ("photo", store_company_photo, "photo_path", f"photo-{company_id}.jpg"),
         ("wallpaper", store_wallpaper, "wallpaper_path", f"wall-{company_id}.jpg"),
         ("cover", store_cover, "cover_path", f"cover-{company_id}.jpg"),
+        ("card_bg", store_card_bg, "card_bg_path", f"cardbg-{company_id}.jpg"),
     ):
         upload = form.get(field)
         if isinstance(upload, UploadFile) and upload.filename:
@@ -783,6 +800,21 @@ def company_logo(company_id: int, user: CurrentUser):
     return FileResponse(path, media_type="image/png")
 
 
+@router.get("/companies/{company_id}/card-bg.jpg")
+def company_card_bg(company_id: int, user: CurrentUser):
+    """Preview the card's own background in the admin."""
+    with connect() as conn:
+        row = conn.execute(
+            "SELECT card_bg_path FROM companies WHERE id = ?", (company_id,)
+        ).fetchone()
+    if row is None or not row["card_bg_path"]:
+        raise HTTPException(404, "No background")
+    path = UPLOADS / row["card_bg_path"]
+    if not path.exists():
+        raise HTTPException(404, "No background")
+    return FileResponse(path, media_type="image/jpeg")
+
+
 @router.get("/companies/{company_id}/cover.jpg")
 def company_cover(company_id: int, user: CurrentUser):
     """Preview the banner in the admin, before any contact exists to show it."""
@@ -935,7 +967,7 @@ async def delete_company(company_id: int, request: Request, user: CurrentUser):
     return {"id": company_id, "name": company["name"], "contacts_deleted": removed}
 
 
-# --- the company showcase: pictures and videos shown on every card it owns ---
+# --- the company showcase: pictures, videos and link buttons, on every card ---
 
 
 def media_row(row) -> dict:
@@ -945,6 +977,8 @@ def media_row(row) -> dict:
         "caption": row["caption"],
         "url": row["url"],
         "position": row["position"],
+        "fill": bool(row["fill"]),
+        "border": row["border"],
     }
     out["image_url"] = f"/api/admin/media/{row['id']}/image.jpg" if row["path"] else None
     return out
@@ -964,56 +998,80 @@ def read_media(company_id: int, user: CurrentUser):
     return media_list(company_id)
 
 
+def button_style(form) -> tuple[int, int]:
+    """A link button's look, as posted: filled or bare, and its outline.
+
+    Only a link reads these. A picture or a video carries the defaults and
+    ignores them.
+    """
+    fill = 1 if str(form.get("fill") or "").strip() in {"1", "true", "on", "yes"} else 0
+    raw = str(form.get("border") or "0").strip()
+    if not raw.isdigit() or int(raw) > MAX_BUTTON_BORDER:
+        raise HTTPException(422, f"A border runs from 0 to {MAX_BUTTON_BORDER}")
+    return fill, int(raw)
+
+
 @router.post("/companies/{company_id}/media", status_code=201)
 async def add_media(company_id: int, request: Request, user: CurrentUser):
-    """Add one picture (uploaded) or one video (a link) to the showcase."""
+    """Add one picture (uploaded), one video, or one link button.
+
+    All three are one row in the same table, so the order they appear in is
+    the order they were added, and a company's showcase stays one list.
+
+    A picture must be uploaded and a link must have somewhere to go; the
+    picture inside a link button is optional, so the row is written first and
+    the file attached after, which is also what gives the file its name.
+    """
     with connect() as conn:
         if not conn.execute("SELECT 1 FROM companies WHERE id = ?", (company_id,)).fetchone():
             raise HTTPException(404, "Company not found")
     form = await request.form()
     kind = str(form.get("kind") or "").strip()
-    if kind not in ("image", "video"):
-        raise HTTPException(422, "Choose a picture or a video")
+    if kind not in MEDIA_KINDS:
+        raise HTTPException(422, "Choose a picture, a video or a link")
     caption = str(form.get("caption") or "").strip() or None
     url = str(form.get("url") or "").strip() or None
+    fill, border = button_style(form)
 
-    if kind == "video":
+    if kind == "link" and not caption:
+        raise HTTPException(422, "A button needs a label")
+    if kind in ("video", "link"):
         if not url:
-            raise HTTPException(422, "A video needs a link")
+            raise HTTPException(422, "A video needs a link" if kind == "video" else
+                                     "A button needs a link to open")
         if not url.lower().startswith(("http://", "https://")):
             url = f"https://{url}"
-        path = None
     else:
-        upload = form.get("file")
-        if not (isinstance(upload, UploadFile) and upload.filename):
-            raise HTTPException(422, "Choose a picture to upload")
-        with connect() as conn:
-            cur = conn.execute(
-                "INSERT INTO company_media (company_id, kind, caption, url, position) "
-                "VALUES (?, 'image', ?, NULL, "
-                "(SELECT COALESCE(MAX(position), -1) + 1 FROM company_media WHERE company_id = ?))",
-                (company_id, caption, company_id),
-            )
-            media_id = cur.lastrowid
-        path = f"media-{media_id}.jpg"
-        try:
-            photos.save_media(await upload.read(), UPLOADS / path)
-        except photos.BadImage as e:
-            with connect() as conn:
-                conn.execute("DELETE FROM company_media WHERE id = ?", (media_id,))
-            raise HTTPException(422, str(e)) from e
-        with connect() as conn:
-            conn.execute("UPDATE company_media SET path = ? WHERE id = ?", (path, media_id))
-        return {"id": media_id}
+        url = None
+
+    upload = form.get("file")
+    picture = upload if isinstance(upload, UploadFile) and upload.filename else None
+    if kind == "image" and picture is None:
+        raise HTTPException(422, "Choose a picture to upload")
 
     with connect() as conn:
         cur = conn.execute(
-            "INSERT INTO company_media (company_id, kind, caption, url, path, position) "
+            "INSERT INTO company_media "
+            "(company_id, kind, caption, url, path, position, fill, border) "
             "VALUES (?, ?, ?, ?, NULL, "
-            "(SELECT COALESCE(MAX(position), -1) + 1 FROM company_media WHERE company_id = ?))",
-            (company_id, kind, caption, url, company_id),
+            "(SELECT COALESCE(MAX(position), -1) + 1 FROM company_media WHERE company_id = ?), "
+            "?, ?)",
+            (company_id, kind, caption, url, company_id, fill, border),
         )
-    return {"id": cur.lastrowid}
+        media_id = cur.lastrowid
+    if picture is None:
+        return {"id": media_id}
+
+    path = f"media-{media_id}.jpg"
+    try:
+        photos.save_media(await picture.read(), UPLOADS / path)
+    except photos.BadImage as e:
+        with connect() as conn:
+            conn.execute("DELETE FROM company_media WHERE id = ?", (media_id,))
+        raise HTTPException(422, str(e)) from e
+    with connect() as conn:
+        conn.execute("UPDATE company_media SET path = ? WHERE id = ?", (path, media_id))
+    return {"id": media_id}
 
 
 @router.get("/media/{media_id}/image.jpg")
@@ -1307,7 +1365,7 @@ def _export_payload(company_id: int | None) -> dict:
             media = [
                 dict(m)
                 for m in conn.execute(
-                    "SELECT kind, path, url, caption, position FROM company_media "
+                    "SELECT kind, path, url, caption, position, fill, border FROM company_media "
                     "WHERE company_id = ? ORDER BY position, id",
                     (co["id"],),
                 )
@@ -1332,11 +1390,13 @@ def export_everything(user: CurrentUser, company_id: int | None = None):
     return _export_payload(company_id)
 
 
-# The five company pictures, and the name each takes once imported. Keyed by
+# Every company picture, and the name each takes once imported. Keyed by
 # column so one loop can restore them and write the paths back.
 COMPANY_PICTURES = (
     ("logo_path", "logo-{id}.png"),
     ("wallpaper_path", "wall-{id}.jpg"),
+    ("cover_path", "cover-{id}.jpg"),
+    ("card_bg_path", "cardbg-{id}.jpg"),
     ("favicon_path", "icon-{id}.png"),
     ("photo_path", "photo-{id}.jpg"),
     ("photo_small_path", "photo-{id}-s.jpg"),
@@ -1482,8 +1542,8 @@ def _import_company(co: dict, archive: zipfile.ZipFile) -> dict:
         for person in co.get("people") or []:
             public_id = new_public_id()
             cur = conn.execute(
-                "INSERT INTO contacts "
-                f"(public_id, company_id, created_at, updated_at, {', '.join(SINGLE)}) "  # noqa: S608
+                "INSERT INTO contacts "  # noqa: S608
+                f"(public_id, company_id, created_at, updated_at, {', '.join(SINGLE)}) "
                 f"VALUES (?, ?, ?, ?, {', '.join(['?'] * len(SINGLE))})",
                 (public_id, company_id, now, now, *(person.get(c) for c in SINGLE)),
             )
@@ -1513,14 +1573,17 @@ def _import_company(co: dict, archive: zipfile.ZipFile) -> dict:
 
         for item in co.get("media") or []:
             cur = conn.execute(
-                "INSERT INTO company_media (company_id, kind, caption, url, position) "
-                "VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO company_media "
+                "(company_id, kind, caption, url, position, fill, border) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
                     company_id,
                     item.get("kind") or "image",
                     item.get("caption"),
                     item.get("url"),
                     item.get("position") or 0,
+                    1 if item.get("fill", 1) else 0,
+                    int(item.get("border") or 0),
                 ),
             )
             written = _restore(archive, item.get("path"), f"media-{cur.lastrowid}.jpg")

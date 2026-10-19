@@ -113,6 +113,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
   const [font, setFont] = useState<FontKey>(DEFAULT_FONT);
   const fontChoiceApplied = useRef(false);
   const [fit, setFit] = useState<WallpaperFit>(DEFAULT_WALLPAPER_FIT);
+  const [cardBg, setCardBg] = useState(false);
   const [typeScale, setTypeScale] = useState<TypeScaleKey>(DEFAULT_TYPE_SCALE);
   const [photoShape, setPhotoShape] = useState<PhotoShape>("square");
   const [photoAlign, setPhotoAlign] = useState<PhotoAlign>("left");
@@ -879,6 +880,38 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                     ) : (
                       <button type="button" onClick={() => setTheme("wallpaper")} className="btn">
                         Use a background image instead
+                      </button>
+                    )}
+
+                    {/* A second picture, for the card rather than the screen.
+                        The wallpaper fills the room the card sits in; this
+                        fills the card itself, so a company can set either,
+                        both or neither, whatever template it picked. */}
+                    {cardBg || company?.card_bg_path ? (
+                      <div className="mt-3 rounded-xl border border-line bg-wash p-4">
+                        <ImagePicker
+                          name="card_bg"
+                          shape="rect"
+                          aspect={3 / 4}
+                          maxEdge={1280}
+                          label="Background image on the card"
+                          existing={
+                            company?.card_bg_path
+                              ? `${API}/api/admin/companies/${id}/card-bg.jpg?v=${company.card_bg_path}`
+                              : null
+                          }
+                          removeName="remove_card_bg"
+                          hint="Sits inside the card, behind the name and the details. Keep it quiet, or the words stop reading."
+                        />
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setCardBg(true)}
+                        className="btn mt-3"
+                      >
+                        <Icon name="plus" className="size-4" />
+                        Add a background image
                       </button>
                     )}
                   </div>
