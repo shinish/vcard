@@ -744,6 +744,21 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                       First colour leads; the second ends the Gradient; the third tints the Rays
                       and the rule under the name. Up to {MAX_ACCENTS}.
                     </span>
+
+                    {/* A picture can stand in for the colours entirely. The uploader
+                        itself stays with the template picker: two file inputs named
+                        "wallpaper" would fight over the same save, so this switches
+                        the template on and says where to find it. */}
+                    {theme === "wallpaper" ? (
+                      <span className="block text-xs font-semibold text-ink">
+                        A background image is standing in for these colours — upload it under
+                        Card template, below.
+                      </span>
+                    ) : (
+                      <button type="button" onClick={() => setTheme("wallpaper")} className="btn">
+                        Use a background image instead
+                      </button>
+                    )}
                   </div>
 
                   <label className="block space-y-1.5">
