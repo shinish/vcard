@@ -78,6 +78,11 @@ const DETAIL_LABELS: Record<(typeof COMPANY_DETAILS)[number], string> = {
   country: "Country",
 };
 
+/** What the preview pretends to be. The ratios match the frames they sit in:
+ *  4:3 for the desktop, 9:19 for the phone. */
+const PREVIEW_DESKTOP = { w: 1440, h: 1080 };
+const PREVIEW_PHONE = { w: 390, h: 823 };
+
 export default function CompanyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -132,6 +137,12 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
   // load. A colour picker fires on each frame of a drag, so the design is
   // allowed to settle first — otherwise one drag is a hundred loads.
   const [settled, setSettled] = useState("");
+  // The preview frame is a few hundred pixels wide, so the card page inside
+  // it was always laying out as a phone — which is why the backdrop behind
+  // the card never showed. It renders at a real device width now and is
+  // scaled down to fit, so what is on screen is what a visitor gets.
+  const frame = useRef<HTMLDivElement>(null);
+  const [frameWidth, setFrameWidth] = useState(0);
 
   const loadCompany = useCallback(() => {
     apiJson<Company>(`/api/admin/companies/${id}`)
@@ -225,6 +236,16 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
     const timer = setTimeout(() => setSettled(design), 350);
     return () => clearTimeout(timer);
   }, [design]);
+
+  useEffect(() => {
+    const box = frame.current;
+    if (!box) return;
+    const watch = new ResizeObserver(([entry]) => setFrameWidth(entry.contentRect.width));
+    watch.observe(box);
+    return () => watch.disconnect();
+    // rows, not people: people is derived further down and would be read
+    // here before it exists.
+  }, [rows?.length]);
 
   const people = rows ?? [];
   const person = people[Math.min(pick, Math.max(0, people.length - 1))];
@@ -1555,15 +1576,29 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
           {person ? (
             <>
               <div
+                ref={frame}
                 className={`mx-auto mt-4 overflow-hidden border-4 border-ink bg-paper ${
                   wide ? "aspect-[4/3] w-full rounded-xl" : "aspect-[9/19] w-full max-w-[16rem] rounded-[2rem]"
                 }`}
               >
+                {/* Rendered at the width of the device being shown and scaled
+                    to fit, rather than squeezed into the panel. A few hundred
+                    pixels of viewport made the card page lay out as a phone
+                    whichever button was pressed, so the desktop view never
+                    showed the background behind the card. */}
                 <iframe
                   key={`${person.public_id}-${version}-${wide}-${settled}`}
                   src={`/user/${person.public_id}?${settled}`}
                   title={`Card preview for ${person.first_name}`}
-                  className="size-full"
+                  style={{
+                    width: wide ? PREVIEW_DESKTOP.w : PREVIEW_PHONE.w,
+                    height: wide ? PREVIEW_DESKTOP.h : PREVIEW_PHONE.h,
+                    transform: `scale(${
+                      frameWidth / (wide ? PREVIEW_DESKTOP.w : PREVIEW_PHONE.w) || 1
+                    })`,
+                    transformOrigin: "top left",
+                    border: 0,
+                  }}
                 />
               </div>
 
