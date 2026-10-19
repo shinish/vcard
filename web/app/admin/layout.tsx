@@ -93,8 +93,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex items-center justify-between gap-4">
         <Link href="/admin" aria-label="TrueTap dashboard" className="workspace-brand flex items-center gap-3">
           {/* The mark carries the name on its own. The link keeps its
-              aria-label, so nothing is lost for a screen reader. */}
-          <Image src="/truetap-logo.png" alt="TrueTap" width={124} height={34} />
+              aria-label, so nothing is lost for a screen reader.
+
+              Two files, not a CSS filter: the sidebar is white under the light
+              theme and near-black under the dark one, and the wordmark's "True"
+              and tagline are navy. Inverting the whole mark would take the
+              brand blue with it, so the dark copy knocks only the navy out to
+              white and leaves the blue alone.
+
+              Both are the vector master from the brand kit, recoloured at the
+              gradient stops rather than redrawn, so the two can never drift
+              apart. */}
+          <Image
+            src={theme === "dark" ? "/truetap-logo-dark.svg" : "/truetap-logo.svg"}
+            alt="TrueTap"
+            width={124}
+            height={34}
+          />
         </Link>
 
         <button type="button" className="workspace-menu lg:hidden" aria-expanded={menuOpen} aria-controls="workspace-navigation" onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? "Close menu" : "Menu"}<Icon name="grid" className="size-4" /></button>
