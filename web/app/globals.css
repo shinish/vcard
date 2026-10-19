@@ -77,13 +77,52 @@ h3,
   --font-display: var(--font-cairo), system-ui, sans-serif;
   --font-sans: var(--font-cairo), system-ui, sans-serif;
 }
+.type-lato {
+  --font-display: var(--font-lato), system-ui, sans-serif;
+  --font-sans: var(--font-lato), system-ui, sans-serif;
+}
+.type-nunito {
+  --font-display: var(--font-nunito), system-ui, sans-serif;
+  --font-sans: var(--font-nunito), system-ui, sans-serif;
+}
+/* The thin one. Raleway's 300 carries the headings as well, which is the
+   whole point of picking it — a light display weight over a regular body. */
+.type-raleway {
+  --font-display: var(--font-raleway), system-ui, sans-serif;
+  --font-sans: var(--font-raleway), system-ui, sans-serif;
+}
+:is(.type-raleway) .font-display {
+  font-weight: 300;
+  letter-spacing: 0.01em;
+}
+
+.type-montserrat {
+  --font-display: var(--font-montserrat), system-ui, sans-serif;
+  --font-sans: var(--font-montserrat), system-ui, sans-serif;
+}
+.type-lora {
+  --font-display: var(--font-lora), Georgia, serif;
+  --font-sans: var(--font-lora), Georgia, serif;
+}
+.type-manrope {
+  --font-display: var(--font-manrope), system-ui, sans-serif;
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+}
+.type-oswald {
+  --font-display: var(--font-oswald), system-ui, sans-serif;
+  --font-sans: var(--font-oswald), system-ui, sans-serif;
+}
+.type-quicksand {
+  --font-display: var(--font-quicksand), system-ui, sans-serif;
+  --font-sans: var(--font-quicksand), system-ui, sans-serif;
+}
 
 /* Apply each type set on its own element instead of inheriting the body's
    already resolved interface font. */
-:is(.type-poppins, .type-inter, .type-playfair, .type-plex, .type-cairo) {
+:is(.type-poppins, .type-inter, .type-playfair, .type-plex, .type-cairo, .type-lato, .type-nunito, .type-raleway, .type-montserrat, .type-lora, .type-manrope, .type-oswald, .type-quicksand) {
   font-family: var(--font-sans);
 }
-:is(.type-poppins, .type-inter, .type-playfair, .type-plex, .type-cairo) .font-display {
+:is(.type-poppins, .type-inter, .type-playfair, .type-plex, .type-cairo, .type-lato, .type-nunito, .type-raleway, .type-montserrat, .type-lora, .type-manrope, .type-oswald, .type-quicksand) .font-display {
   font-family: var(--font-display);
 }
 
@@ -581,4 +620,20 @@ h3,
   border: 0;
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-soft);
+}
+
+
+/* How large the card reads. Tailwind's sizes are in rem and resolve against
+   the root, so a font-size on an ancestor would move nothing — zoom scales
+   the type and the spacing together, which is what "larger" has to mean on a
+   card. Firefox below 126 ignores it and shows the normal size, which is a
+   fair place to land. */
+.card-size-compact {
+  zoom: 0.92;
+}
+.card-size-large {
+  zoom: 1.1;
+}
+.card-size-xl {
+  zoom: 1.22;
 }

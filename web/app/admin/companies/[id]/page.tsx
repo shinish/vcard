@@ -18,11 +18,14 @@ import {
   type Company,
   DEFAULT_ACCENT,
   DEFAULT_FONT,
+  DEFAULT_TYPE_SCALE,
   DEFAULT_WALLPAPER_FIT,
   FONTS,
   type FontKey,
   type Media,
   WALLPAPER_FITS,
+  TYPE_SCALES,
+  type TypeScaleKey,
   type WallpaperFit,
   DEFAULT_LOGO_POSITION,
   DEFAULT_LOGO_SCALE,
@@ -104,6 +107,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
   const [font, setFont] = useState<FontKey>(DEFAULT_FONT);
   const fontChoiceApplied = useRef(false);
   const [fit, setFit] = useState<WallpaperFit>(DEFAULT_WALLPAPER_FIT);
+  const [typeScale, setTypeScale] = useState<TypeScaleKey>(DEFAULT_TYPE_SCALE);
   const [showQr, setShowQr] = useState(true);
   const [showQrDownload, setShowQrDownload] = useState(true);
   // Every company switch in one bag: they are posted and read the same way.
@@ -159,6 +163,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
         if (chosenFont) setTab("branding");
         fontChoiceApplied.current = true;
         setFit(c.wallpaper_fit ?? DEFAULT_WALLPAPER_FIT);
+        setTypeScale(c.type_scale ?? DEFAULT_TYPE_SCALE);
         setShowQr(Boolean(c.show_qr ?? true));
         setShowQrDownload(Boolean(c.show_qr_download ?? true));
         setSwitches({
@@ -231,6 +236,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
     logo_position: logoAt,
     logo_scale: String(logoScale),
     wallpaper_fit: fit,
+    type_scale: typeScale,
   }).toString();
   useEffect(() => {
     const timer = setTimeout(() => setSettled(design), 350);
@@ -1136,6 +1142,22 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                         ).map((t) => (
                           <option key={t.key} value={t.key}>
                             {t.label} — {t.hint}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="block space-y-1.5">
+                      <span className="text-sm font-semibold text-ink-soft">Text size</span>
+                      <select
+                        name="type_scale"
+                        value={typeScale}
+                        onChange={(e) => setTypeScale(e.target.value as TypeScaleKey)}
+                        className="field bg-paper"
+                      >
+                        {TYPE_SCALES.map((s) => (
+                          <option key={s.key} value={s.key}>
+                            {s.label}
                           </option>
                         ))}
                       </select>

@@ -59,6 +59,7 @@ from .fields import (
     DEFAULT_LOGO_POSITION,
     DEFAULT_LOGO_SCALE,
     DEFAULT_THEME,
+    DEFAULT_TYPE_SCALE,
     DEFAULT_WALLPAPER_FIT,
     FONTS,
     LANGUAGES,
@@ -68,6 +69,7 @@ from .fields import (
     MIN_LOGO_SCALE,
     SINGLE,
     THEMES,
+    TYPE_SCALES,
     WALLPAPER_FITS,
 )
 
@@ -80,6 +82,7 @@ BRAND_COLUMNS = (
     "language",
     "wallpaper_fit",
     "font",
+    "type_scale",
     "show_qr",
     "show_qr_download",
     "require_consent",
@@ -170,6 +173,10 @@ def branding(form) -> dict[str, object]:
     if font not in FONTS:
         raise HTTPException(422, f"Unknown font: {font!r}")
 
+    scale_name = str(form.get("type_scale") or DEFAULT_TYPE_SCALE).strip()
+    if scale_name not in TYPE_SCALES:
+        raise HTTPException(422, f"Unknown text size: {scale_name!r}")
+
     rest: dict[str, object] = {
         "theme": theme,
         "logo_position": position,
@@ -177,6 +184,7 @@ def branding(form) -> dict[str, object]:
         "language": language,
         "wallpaper_fit": fit,
         "font": font,
+        "type_scale": scale_name,
         # Every switch is posted as "1" or "0" by the admin UI; a form that
         # leaves one out keeps that column's default.
         **{

@@ -215,6 +215,7 @@ export default async function CardPage({
     logo_scale: savedLogoScale,
     language,
     font: savedFont,
+    type_scale: typeScale,
     wallpaper_url: wallpaperUrl,
     wallpaper_fit: savedWallpaperFit,
     show_qr: showQr,
@@ -289,7 +290,11 @@ export default async function CardPage({
         ...(wallpaperUrl ? ({ "--wallpaper": `url(${API}${wallpaperUrl})` } as React.CSSProperties) : {}),
       }}
     >
-      <article className="contact-card relative flex w-full flex-col bg-paper lg:max-w-lg lg:rounded-2xl lg:shadow-[var(--shadow-lift)]">
+      <article
+        className={`contact-card relative flex w-full flex-col bg-paper lg:max-w-lg lg:rounded-2xl lg:shadow-[var(--shadow-lift)]${
+          typeScale && typeScale !== "normal" ? ` card-size-${typeScale}` : ""
+        }`}
+      >
         {/* Header band: the company's colours — or its own picture as a cover —
             with the bar that shares or prints the card, and the logo on a line
             of its own so a centred logo is centred on the band and not in

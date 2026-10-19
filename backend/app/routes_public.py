@@ -113,6 +113,7 @@ def fetch(public_id: str):
             "co.logo_position AS company_logo_position, co.logo_scale AS company_logo_scale, "
             "co.language AS company_language, co.wallpaper_path AS company_wallpaper, "
             "co.wallpaper_fit AS company_wallpaper_fit, co.font AS company_font, "
+            "co.type_scale AS company_type_scale, "
             "co.show_qr AS company_show_qr, co.show_qr_download AS company_show_qr_download, "
             "co.favicon_path AS company_favicon, co.require_consent AS company_consent, "
             "co.public_sharing AS company_public, co.allow_indexing AS company_indexing, "
@@ -458,6 +459,7 @@ def get_card(public_id: str, request: Request, s: str | None = None, preview: in
         "logo_scale": row["company_logo_scale"] or 100,
         "language": row["company_language"] or "en",
         "font": row["company_font"] or "poppins",
+        "type_scale": row["company_type_scale"] or "normal",
         "wallpaper_url": (
             f"/api/public/{public_id}/wallpaper.jpg" if row["company_wallpaper"] else None
         ),

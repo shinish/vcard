@@ -162,8 +162,16 @@ WALLPAPER_FITS = ("cover", "stretch", "tile")
 DEFAULT_WALLPAPER_FIT = "cover"
 
 # Type on the card. Each key maps to a pair of web fonts on the frontend.
-FONTS = ("poppins", "inter", "playfair", "plex", "cairo")
+FONTS = (
+    "poppins", "inter", "playfair", "plex", "cairo", "lato", "nunito",
+    "raleway", "montserrat", "lora", "manrope", "oswald", "quicksand",
+)
 DEFAULT_FONT = "poppins"
+
+# How large the card reads. Applied as a zoom on the card itself, because the
+# type sizes are in rem and resolve against the root rather than the card.
+TYPE_SCALES = ("compact", "normal", "large", "xl")
+DEFAULT_TYPE_SCALE = "normal"
 
 # A company may carry a small palette rather than a single accent.
 MAX_ACCENTS = 6

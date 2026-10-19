@@ -174,6 +174,7 @@ def init() -> None:
                 "wallpaper_path": "TEXT",
                 "wallpaper_fit": "TEXT NOT NULL DEFAULT 'cover'",
                 "font": "TEXT NOT NULL DEFAULT 'poppins'",
+                "type_scale": "TEXT NOT NULL DEFAULT 'normal'",
                 "show_qr": "INTEGER NOT NULL DEFAULT 1",
                 "show_qr_download": "INTEGER NOT NULL DEFAULT 1",
                 "favicon_path": "TEXT",

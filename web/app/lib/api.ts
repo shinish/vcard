@@ -82,6 +82,7 @@ export type Contact = Record<SingleField, string | null> & {
     logo_scale: number;
     language: Language;
     font: FontKey;
+  type_scale: TypeScaleKey;
     wallpaper_url: string | null;
     wallpaper_fit: WallpaperFit;
     show_qr: boolean;
@@ -147,8 +148,27 @@ export const FONTS = [
   { key: "playfair", label: "Playfair & Lato", hint: "Serif headings" },
   { key: "plex", label: "IBM Plex Sans", hint: "Technical, even widths" },
   { key: "cairo", label: "Cairo", hint: "Carries Arabic properly" },
+  { key: "lato", label: "Lato", hint: "Quiet and humanist" },
+  { key: "nunito", label: "Nunito", hint: "Rounded, approachable" },
+  { key: "raleway", label: "Raleway Light", hint: "Thin, for an airy card" },
+  { key: "montserrat", label: "Montserrat", hint: "Geometric and broad" },
+  { key: "lora", label: "Lora", hint: "A softer serif" },
+  { key: "manrope", label: "Manrope", hint: "Modern, slightly squared" },
+  { key: "oswald", label: "Oswald", hint: "Condensed, for short names" },
+  { key: "quicksand", label: "Quicksand", hint: "Rounded and friendly" },
 ] as const;
 export type FontKey = (typeof FONTS)[number]["key"];
+
+/** How large the card reads. A zoom on the card itself, because the type
+ *  sizes are in rem and resolve against the root rather than the card. */
+export const TYPE_SCALES = [
+  { key: "compact", label: "Compact" },
+  { key: "normal", label: "Normal" },
+  { key: "large", label: "Large" },
+  { key: "xl", label: "Extra large" },
+] as const;
+export type TypeScaleKey = (typeof TYPE_SCALES)[number]["key"];
+export const DEFAULT_TYPE_SCALE: TypeScaleKey = "normal";
 export const DEFAULT_FONT: FontKey = "poppins";
 
 export type ThemeKey = (typeof THEMES)[number]["key"];
@@ -220,6 +240,7 @@ export type Company = {
   logo_scale: number;
   language: Language;
   font: FontKey;
+  type_scale: TypeScaleKey;
   wallpaper_path: string | null;
   wallpaper_fit: WallpaperFit;
   show_qr: boolean | number;
