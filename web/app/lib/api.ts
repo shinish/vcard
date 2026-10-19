@@ -338,11 +338,22 @@ export async function apiJson<T>(path: string, init: RequestInit = {}): Promise<
   return res.json();
 }
 
-export async function getPublicCard(id: string, source?: string): Promise<Contact | null> {
+export async function getPublicCard(
+  id: string,
+  source?: string,
+  /** An admin's cookies, when this render is the designer's preview. The API
+   *  leaves a preview out of the visit counts, but only for a session it can
+   *  verify — so the cookies have to travel with the request. */
+  previewAs?: string,
+): Promise<Contact | null> {
   const base = typeof window === "undefined" ? SERVER_ORIGIN : "";
-  const query = source ? `?s=${encodeURIComponent(source)}` : "";
+  const params = new URLSearchParams();
+  if (source) params.set("s", source);
+  if (previewAs) params.set("preview", "1");
+  const query = params.toString() ? `?${params}` : "";
   const res = await fetch(`${base}/api/public/${encodeURIComponent(id)}${query}`, {
     cache: "no-store",
+    ...(previewAs ? { headers: { cookie: previewAs } } : {}),
   });
   // 410 is a card whose company switched sharing off: the link was real, and
   // the page it lands on says the same thing either way.

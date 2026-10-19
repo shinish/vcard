@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse, Response
 
 from . import mailer, qr, signature, vcf
 from . import settings as app_settings
+from .auth import is_admin
 from .config import UPLOADS, public_base_url
 from .contacts import field_rows, serialise
 from .db import connect
@@ -416,9 +417,14 @@ def showcase(company_id: int, public_id: str) -> list[dict]:
 
 
 @router.get("/{public_id}")
-def get_card(public_id: str, request: Request, s: str | None = None):
+def get_card(public_id: str, request: Request, s: str | None = None, preview: int = 0):
     row, fields = fetch(public_id)
-    record(row["id"], "view", source_of(request, s), request=request)
+    # The card designer reloads this page on every change it previews, and
+    # counting those would drown the real visits. A request that can prove it
+    # is an admin may ask not to be counted; anyone else is counted whatever
+    # they ask for.
+    if not (preview and is_admin(request)):
+        record(row["id"], "view", source_of(request, s), request=request)
     out = serialise(row, fields)
     out["company"] = {
         "name": row["company_name"],

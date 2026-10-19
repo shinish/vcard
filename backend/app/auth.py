@@ -138,6 +138,20 @@ def current_user(request: Request) -> sqlite3.Row:
     return _resolve(request, allow_pending=False)
 
 
+def is_admin(request: Request) -> bool:
+    """Whether this request carries a working admin session.
+
+    For routes that are public but should behave differently for someone
+    signed in. Returns a fact rather than raising, because the caller wants to
+    branch, not to refuse.
+    """
+    try:
+        current_user(request)
+    except HTTPException:
+        return False
+    return True
+
+
 def half_signed_in(request: Request) -> sqlite3.Row:
     """The user behind a session that still owes its one-time code."""
     return _resolve(request, allow_pending=True)

@@ -128,6 +128,10 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
   const [securityNote, setSecurityNote] = useState<string | null>(null);
   // Bumped on every save so the preview iframe reloads the card.
   const [version, setVersion] = useState(0);
+  // The preview is the real card in an iframe, so every change is a page
+  // load. A colour picker fires on each frame of a drag, so the design is
+  // allowed to settle first — otherwise one drag is a hundred loads.
+  const [settled, setSettled] = useState("");
 
   const loadCompany = useCallback(() => {
     apiJson<Company>(`/api/admin/companies/${id}`)
@@ -208,6 +212,19 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
       setBusy(false);
     }
   }
+
+  const design = new URLSearchParams({
+    theme,
+    font,
+    accents: JSON.stringify(accents.filter(Boolean)),
+    logo_position: logoAt,
+    logo_scale: String(logoScale),
+    wallpaper_fit: fit,
+  }).toString();
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(design), 350);
+    return () => clearTimeout(timer);
+  }, [design]);
 
   const people = rows ?? [];
   const person = people[Math.min(pick, Math.max(0, people.length - 1))];
@@ -745,15 +762,54 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                       and the rule under the name. Up to {MAX_ACCENTS}.
                     </span>
 
-                    {/* A picture can stand in for the colours entirely. The uploader
-                        itself stays with the template picker: two file inputs named
-                        "wallpaper" would fight over the same save, so this switches
-                        the template on and says where to find it. */}
+                    {/* A picture can stand in for the colours entirely. This is
+                        the only wallpaper field on the page — two inputs sharing
+                        the name would fight over the same save — so it lives here,
+                        where someone choosing a background is already looking. */}
                     {theme === "wallpaper" ? (
-                      <span className="block text-xs font-semibold text-ink">
-                        A background image is standing in for these colours — upload it under
-                        Card template, below.
-                      </span>
+                    <div className="mt-5 rounded-xl border border-line bg-wash p-4">
+                      <ImagePicker
+                        name="wallpaper"
+                        shape="rect"
+                        aspect={9 / 16}
+                        maxEdge={1920}
+                        label="Wallpaper"
+                        existing={
+                          company?.wallpaper_path
+                            ? `${API}/api/admin/companies/${id}/wallpaper.jpg?v=${company.wallpaper_path}`
+                            : null
+                        }
+                        removeName="remove_wallpaper"
+                        hint="Fills the screen behind the card. Crop it tall: most people open a card on a phone."
+                      />
+                      <fieldset className="mt-4">
+                        <legend className="text-sm font-semibold text-ink-soft">How it fills</legend>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {WALLPAPER_FITS.map((f) => (
+                            <label
+                              key={f.key}
+                              className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm font-semibold ${
+                                fit === f.key
+                                  ? "grad-brand border-brand"
+                                  : "border-line bg-paper hover:border-ink"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="wallpaper_fit_choice"
+                                checked={fit === f.key}
+                                onChange={() => setFit(f.key)}
+                                className="sr-only"
+                              />
+                              {f.label}
+                            </label>
+                          ))}
+                        </div>
+                        <p className="mt-2 text-xs text-ink-soft">
+                          {WALLPAPER_FITS.find((f) => f.key === fit)?.hint}
+                        </p>
+                      </fieldset>
+                    </div>
                     ) : (
                       <button type="button" onClick={() => setTheme("wallpaper")} className="btn">
                         Use a background image instead
@@ -858,52 +914,6 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
               {/* Always posted: the radios below only exist while the wallpaper
                   template is chosen, and a missing field saves as the default. */}
               <input type="hidden" name="wallpaper_fit" value={fit} />
-
-              {theme === "wallpaper" ? (
-                <div className="mt-5 rounded-xl border border-line bg-wash p-4">
-                  <ImagePicker
-                    name="wallpaper"
-                    shape="rect"
-                    aspect={9 / 16}
-                    maxEdge={1920}
-                    label="Wallpaper"
-                    existing={
-                      company?.wallpaper_path
-                        ? `${API}/api/admin/companies/${id}/wallpaper.jpg?v=${company.wallpaper_path}`
-                        : null
-                    }
-                    removeName="remove_wallpaper"
-                    hint="Fills the screen behind the card. Crop it tall: most people open a card on a phone."
-                  />
-                  <fieldset className="mt-4">
-                    <legend className="text-sm font-semibold text-ink-soft">How it fills</legend>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {WALLPAPER_FITS.map((f) => (
-                        <label
-                          key={f.key}
-                          className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm font-semibold ${
-                            fit === f.key
-                              ? "grad-brand border-brand"
-                              : "border-line bg-paper hover:border-ink"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="wallpaper_fit_choice"
-                            checked={fit === f.key}
-                            onChange={() => setFit(f.key)}
-                            className="sr-only"
-                          />
-                          {f.label}
-                        </label>
-                      ))}
-                    </div>
-                    <p className="mt-2 text-xs text-ink-soft">
-                      {WALLPAPER_FITS.find((f) => f.key === fit)?.hint}
-                    </p>
-                  </fieldset>
-                </div>
-              ) : null}
 
               <fieldset className="mt-6">
                 <legend className="text-sm font-semibold text-ink-soft">QR code on the card</legend>
@@ -1521,7 +1531,7 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="font-display text-base font-bold">Digital card preview</h2>
-              <p className="text-xs text-ink-soft">Saved changes show here.</p>
+              <p className="text-xs text-ink-soft">Changes show here as you make them.</p>
             </div>
             <div className="flex gap-1 rounded-full bg-wash p-1">
               {[
@@ -1550,8 +1560,8 @@ export default function CompanyPage({ params }: { params: Promise<{ id: string }
                 }`}
               >
                 <iframe
-                  key={`${person.public_id}-${version}-${wide}`}
-                  src={`/user/${person.public_id}`}
+                  key={`${person.public_id}-${version}-${wide}-${settled}`}
+                  src={`/user/${person.public_id}?${settled}`}
                   title={`Card preview for ${person.first_name}`}
                   className="size-full"
                 />

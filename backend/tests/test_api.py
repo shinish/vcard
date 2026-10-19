@@ -1632,3 +1632,43 @@ def test_a_reply_to_address_must_look_like_one(seeded):
     assert admin.patch(
         "/api/admin/settings", data={"mail_reply_to": "not-an-address"}
     ).status_code == 422
+
+
+def test_a_preview_is_not_a_visit_but_only_for_an_admin(seeded):
+    """The designer's preview reloads the card on every change. Those must not
+    land in the visit counts — but asking not to be counted cannot be enough
+    on its own, or any visitor could opt out of the analytics."""
+    from fastapi.testclient import TestClient as Client
+
+    admin = sign_in("root", "super-secret-pw")
+    company = admin.post("/api/admin/companies", data={"name": "Tallied Ltd"}).json()["id"]
+    made = admin.post(
+        "/api/admin/contacts", data={"first_name": "Counted", "company_id": company}
+    )
+    assert made.status_code == 201, made.text
+    public_id = made.json()["public_id"]
+
+    def views() -> int:
+        with connect() as conn:
+            return conn.execute(
+                "SELECT COUNT(*) FROM card_events e JOIN contacts c ON c.id = e.contact_id "
+                "WHERE c.public_id = ? AND e.kind = 'view'",
+                (public_id,),
+            ).fetchone()[0]
+
+    assert views() == 0
+
+    # a stranger is counted, and asking not to be changes nothing
+    stranger = Client(app)
+    assert stranger.get(f"/api/public/{public_id}").status_code == 200
+    assert views() == 1
+    assert stranger.get(f"/api/public/{public_id}?preview=1").status_code == 200
+    assert views() == 2, "a visitor must not be able to opt out of being counted"
+
+    # the admin asking for a preview is not
+    assert admin.get(f"/api/public/{public_id}?preview=1").status_code == 200
+    assert views() == 2
+
+    # and an admin who does not ask for one still counts as a visit
+    assert admin.get(f"/api/public/{public_id}").status_code == 200
+    assert views() == 3

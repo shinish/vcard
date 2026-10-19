@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { splitDial } from "../../lib/countries";
 
@@ -19,6 +20,15 @@ import {
   type AddressValue,
   type Contact,
   type ContactField,
+  FONTS,
+  type FontKey,
+  LOGO_POSITIONS,
+  type LogoPosition,
+  MAX_ACCENTS,
+  THEMES,
+  type ThemeKey,
+  WALLPAPER_FITS,
+  type WallpaperFit,
   companyLabel,
   fullName,
   getPublicCard,
@@ -128,30 +138,85 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
+const PREVIEW_KEYS = ["theme", "font", "accents", "logo_position", "logo_scale", "wallpaper_fit"];
+
+/** Unsaved styling, for the card designer's live preview.
+ *
+ *  This page is public, so the overrides are honoured only for a request that
+ *  carries a working admin session. Without that check anyone could share a
+ *  link that restyles someone else's card, and one card would answer on a
+ *  great many URLs for anything crawling the site.
+ *
+ *  Each value is checked against the same allow-lists the API enforces: theme
+ *  and font become CSS class names, and the palette is interpolated into a
+ *  style attribute. A session is not a reason to stop validating.
+ */
+async function previewStyle(query: Record<string, string | undefined>) {
+  if (!PREVIEW_KEYS.some((key) => query[key])) return null;
+
+  const jar = await cookies();
+  const cookie = jar.getAll().map((c) => `${c.name}=${c.value}`).join("; ");
+  if (!cookie) return null;
+  const origin = process.env.API_ORIGIN ?? "http://localhost:8000";
+  const who = await fetch(`${origin}/api/admin/me`, { headers: { cookie }, cache: "no-store" });
+  if (!who.ok) return null;
+
+  const allowed = (value: string | undefined, list: readonly { key: string }[]) =>
+    list.some((item) => item.key === value) ? value : undefined;
+
+  let accents: string[] | undefined;
+  try {
+    const parsed: unknown = JSON.parse(query.accents ?? "null");
+    if (Array.isArray(parsed)) {
+      const clean = parsed.filter(
+        (c): c is string => typeof c === "string" && /^#[0-9a-fA-F]{6}$/.test(c),
+      );
+      if (clean.length) accents = clean.slice(0, MAX_ACCENTS);
+    }
+  } catch {
+    // A palette that will not parse simply leaves the saved one in place.
+  }
+
+  const scale = Number(query.logo_scale);
+  return {
+    cookie,
+    accents,
+    theme: allowed(query.theme, THEMES) as ThemeKey | undefined,
+    font: allowed(query.font, FONTS) as FontKey | undefined,
+    // LOGO_POSITIONS is a list of plain strings, unlike the others.
+    logoAt: (LOGO_POSITIONS as readonly string[]).includes(query.logo_position ?? "")
+      ? (query.logo_position as LogoPosition)
+      : undefined,
+    fit: allowed(query.wallpaper_fit, WALLPAPER_FITS) as WallpaperFit | undefined,
+    logoScale: Number.isFinite(scale) && scale > 0 ? scale : undefined,
+  };
+}
+
 export default async function CardPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ lang?: string; s?: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const { id } = await params;
   const query = await searchParams;
-  const card = await getPublicCard(id, query.s);
+  const preview = await previewStyle(query);
+  const card = await getPublicCard(id, query.s, preview?.cookie);
   if (!card) notFound();
 
   const name = fullName(card);
   const rows = card.fields.map(toRow).filter((r): r is Row => r !== null);
   const {
-    theme,
-    accents,
+    theme: savedTheme,
+    accents: savedAccents,
     logo_url: logoUrl,
-    logo_position: logoAt,
-    logo_scale: logoScale,
+    logo_position: savedLogoAt,
+    logo_scale: savedLogoScale,
     language,
-    font,
+    font: savedFont,
     wallpaper_url: wallpaperUrl,
-    wallpaper_fit: wallpaperFit,
+    wallpaper_fit: savedWallpaperFit,
     show_qr: showQr,
     show_qr_download: showQrDownload,
     allow_save: allowSave,
@@ -162,6 +227,14 @@ export default async function CardPage({
     allow_exchange: allowExchange,
     media,
   } = card.company;
+
+  // Unsaved styling wins only for the designer; everyone else sees what is saved.
+  const theme = preview?.theme ?? savedTheme;
+  const accents = preview?.accents ?? savedAccents;
+  const logoAt = preview?.logoAt ?? savedLogoAt;
+  const logoScale = preview?.logoScale ?? savedLogoScale;
+  const font = preview?.font ?? savedFont;
+  const wallpaperFit = preview?.fit ?? savedWallpaperFit;
 
   // The viewer's pick wins over the company's default, so one card can be
   // read in any of the languages it is translated into.
